@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body{ margin:0; font-family:'Manrope',-apple-system,sans-serif; background:#E9E4DC; }
+  *{ box-sizing:border-box; scrollbar-width:none; -ms-overflow-style:none; }
+  *::-webkit-scrollbar{ width:0; height:0; display:none; }
+  input{ font-family:'Manrope',sans-serif; }
+  input::placeholder{ color:#6E685E; }
+  @keyframes scanline{ 0%{top:8px} 50%{top:184px} 100%{top:8px} }
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:34px;">
+  <div style="background:#0E0D0B;border-radius:46px;padding:11px;box-shadow:0 30px 80px rgba(40,32,20,0.3);">
+    <div style="width:340px;height:720px;background:#1C1A15;border-radius:36px;overflow:hidden;display:flex;flex-direction:column;font-family:'Manrope';position:relative;">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 26px 6px;flex:none;">
+        <span style="color:#ECE7DB;font-size:13px;font-weight:600;">9:41</span>
+        <div style="width:23px;height:11px;border:1px solid rgba(236,231,219,0.5);border-radius:3px;"></div>
+      </div>
+
+      <!-- ===== ОНБОРДИНГ ===== -->
+      <sc-if value="{{ showOnboard }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 30px;">
+          <div style="width:60px;height:60px;border:1.5px solid #C2A079;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:700;font-size:28px;margin-bottom:18px;">R</div>
+          <div style="color:#F3EEE2;font-size:22px;font-weight:700;letter-spacing:-0.3px;">Radi coffee</div>
+
+          <sc-if value="{{ stepPhone }}" hint-placeholder-val="{{ true }}">
+            <div style="color:#8C857A;font-size:13.5px;margin-top:10px;text-align:center;line-height:1.55;">Копите кофе и получайте каждый<br>6-й в подарок. Для начала поделитесь<br>номером телефона.</div>
+            <div style="flex:1;max-height:60px;"></div>
+            <div onClick="{{ onShare }}" style="width:100%;padding:17px;border-radius:16px;background:#C2A079;color:#1C1A15;font-size:16px;font-weight:700;text-align:center;cursor:pointer;">Поделиться номером</div>
+            <div style="color:#5A554C;font-size:11px;margin-top:14px;text-align:center;line-height:1.5;">Номер берётся из Telegram / MAX —<br>вводить вручную не нужно</div>
+          </sc-if>
+
+          <sc-if value="{{ stepName }}">
+            <div style="color:#8C857A;font-size:13.5px;margin-top:10px;text-align:center;">Как вас представить в кофейне?</div>
+            <div style="display:flex;align-items:center;gap:7px;margin-top:18px;color:#9A9388;font-size:13px;font-family:monospace;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#5BBF7B;"></span>{{ myPhoneDisp }}
+            </div>
+            <input value="{{ draftName }}" onInput="{{ onName }}" placeholder="Ваше имя" style="width:100%;background:#25231D;border:1px solid rgba(194,160,121,0.2);border-radius:16px;outline:none;color:#ECE7DB;font-size:18px;text-align:center;padding:16px;margin:24px 0 0;" />
+            <div style="flex:1;max-height:60px;"></div>
+            <sc-if value="{{ canFinish }}" hint-placeholder-val="{{ true }}">
+              <div onClick="{{ onFinish }}" style="width:100%;padding:17px;border-radius:16px;background:#C2A079;color:#1C1A15;font-size:16px;font-weight:700;text-align:center;cursor:pointer;">Начать копить</div>
+            </sc-if>
+            <sc-if value="{{ cantFinish }}">
+              <div style="width:100%;padding:17px;border-radius:16px;background:#25231D;color:#5A554C;font-size:16px;font-weight:700;text-align:center;">Начать копить</div>
+            </sc-if>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- ===== КЛИЕНТ · МОЯ КАРТА ===== -->
+      <sc-if value="{{ showClient }}">
+        <div style="flex:1;display:flex;flex-direction:column;padding:12px 22px 18px;overflow-y:auto;">
+          <div style="display:flex;align-items:center;gap:10px;flex:none;">
+            <div style="width:30px;height:30px;border:1.5px solid #C2A079;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:700;font-size:15px;">R</div>
+            <div style="display:flex;flex-direction:column;line-height:1.15;">
+              <span style="color:#ECE7DB;font-size:14px;font-weight:600;">{{ myName }}</span>
+              <span style="color:#8C857A;font-size:11px;">ваша карта лояльности</span>
+            </div>
+          </div>
+
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:14px 0;">
+            <div style="background:#1C1A15;border:1px solid rgba(194,160,121,0.42);border-radius:22px;padding:22px;box-shadow:0 16px 40px rgba(0,0,0,0.35);">
+              <div style="color:#D8D2C2;font-size:17px;font-weight:600;text-align:center;margin-bottom:20px;">6-й кофе в подарок <span style="color:#E7DFC9;">♥</span></div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;justify-items:center;">
+                <sc-for list="{{ mySlots }}" as="s" hint-placeholder-count="6"><div style="{{ s.style }}">{{ s.label }}</div></sc-for>
+              </div>
+              <div style="color:#8C857A;font-size:11px;text-align:center;margin-top:20px;letter-spacing:0.3px;">ул. Болотниковская, 36к5</div>
+            </div>
+            <div style="text-align:center;margin-top:16px;color:#C2A079;font-size:14.5px;font-weight:600;">{{ myStatus }}</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin-top:8px;color:#6E685E;font-size:12px;">
+              <span><span style="color:#9A9388;font-weight:700;">{{ myTotal }}</span> выпито</span>
+              <span><span style="color:#9A9388;font-weight:700;">{{ myFree }}</span> бесплатных</span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;align-items:center;gap:9px;flex:none;">
+            <div style="color:#6E685E;font-size:11px;letter-spacing:0.4px;">Покажите QR баристе</div>
+            <div style="background:#EDE6D6;padding:11px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,0.35);">
+              <canvas ref="{{ qrRef }}" style="display:block;width:189px;height:189px;"></canvas>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===== БАРИСТА ===== -->
+      <sc-if value="{{ showBarista }}">
+        <!-- список -->
+        <sc-if value="{{ bList }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 22px 16px;flex:none;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:30px;height:30px;border:1.5px solid #C2A079;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:700;font-size:15px;">R</div>
+                <div style="display:flex;flex-direction:column;line-height:1.1;">
+                  <span style="color:#ECE7DB;font-size:14px;font-weight:600;">Гости</span>
+                  <span style="color:#8C857A;font-size:10px;letter-spacing:1px;">РЕЖИМ БАРИСТЫ</span>
+                </div>
+              </div>
+              <div onClick="{{ onScan }}" style="width:38px;height:38px;border-radius:11px;background:#25231D;border:1px solid rgba(194,160,121,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#C2A079" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3"/><path d="M20 8V5a1 1 0 0 0-1-1h-3"/><path d="M4 16v3a1 1 0 0 0 1 1h3"/><path d="M20 16v3a1 1 0 0 0-1 1h-3"/><path d="M4 12h16"/></svg>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin:0 22px 14px;padding:12px 14px;background:#25231D;border:1px solid rgba(194,160,121,0.18);border-radius:14px;flex:none;">
+              <div style="width:13px;height:13px;border:1.5px solid #8C857A;border-radius:50%;flex:none;"></div>
+              <input value="{{ query }}" onInput="{{ onQuery }}" placeholder="Имя или номер телефона…" style="flex:1;background:transparent;border:none;outline:none;color:#ECE7DB;font-size:14px;padding:0;" />
+            </div>
+            <div style="flex:1;overflow-y:auto;">
+              <sc-for list="{{ list }}" as="client" hint-placeholder-count="6">
+                <div onClick="{{ client.open }}" style="display:flex;align-items:center;gap:12px;padding:13px 22px;border-bottom:1px solid rgba(236,231,219,0.05);cursor:pointer;">
+                  <div style="width:38px;height:38px;border-radius:50%;background:#25231D;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:600;font-size:15px;flex:none;">{{ client.initial }}</div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span style="color:#ECE7DB;font-size:14.5px;font-weight:600;">{{ client.name }}</span>
+                      <span style="color:#6E685E;font-size:11px;font-family:monospace;">{{ client.phoneDisp }}</span>
+                    </div>
+                    <div style="display:flex;gap:3px;">
+                      <sc-for list="{{ client.bars }}" as="bar" hint-placeholder-count="6"><div style="{{ bar.style }}"></div></sc-for>
+                    </div>
+                  </div>
+                  <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                    <span style="color:#9A9388;font-size:12px;font-variant-numeric:tabular-nums;">{{ client.pct }}</span>
+                    <sc-if value="{{ client.hot }}"><span style="color:#1C1A15;background:#E7DFC9;font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;letter-spacing:0.4px;">ПОДАРОК</span></sc-if>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ notFound }}">
+                <div style="padding:40px 26px;text-align:center;color:#6E685E;font-size:14px;">Гость не найден.<br><span style="font-size:12px;">Попросите его открыть бота Radi coffee.</span></div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+        <!-- карточка гостя -->
+        <sc-if value="{{ bCard }}">
+          <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 22px;flex:none;">
+              <div onClick="{{ onBack }}" style="width:32px;height:32px;border-radius:50%;border:1px solid rgba(236,231,219,0.18);display:flex;align-items:center;justify-content:center;color:#9A9388;font-size:17px;cursor:pointer;">‹</div>
+              <span style="color:#8C857A;font-size:13px;font-weight:500;">Карточка гостя</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:20px 26px 28px;overflow-y:auto;">
+              <div style="width:74px;height:74px;border-radius:50%;background:#25231D;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:700;font-size:31px;margin-bottom:16px;">{{ detailInitial }}</div>
+              <div style="color:#F3EEE2;font-size:24px;font-weight:700;letter-spacing:-0.3px;">{{ detailName }}</div>
+              <div style="color:#8C857A;font-size:13px;font-family:monospace;margin-top:5px;">{{ detailPhone }}</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;justify-items:center;margin:30px 0 18px;">
+                <sc-for list="{{ detailSlots }}" as="s" hint-placeholder-count="6"><div style="{{ s.style }}">{{ s.label }}</div></sc-for>
+              </div>
+              <div style="color:#C2A079;font-size:13px;font-weight:600;">{{ detailCycle }}</div>
+              <div style="flex:1;min-height:24px;"></div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:16px;color:#6E685E;font-size:12px;margin-bottom:16px;">
+                <span><span style="color:#9A9388;font-weight:700;">{{ detailTotal }}</span> чашек всего</span>
+                <span><span style="color:#9A9388;font-weight:700;">{{ detailFree }}</span> бесплатных</span>
+                <sc-if value="{{ detailHasBonus }}"><span><span style="color:#E7DFC9;font-weight:700;">{{ detailBonus }}</span> в запасе</span></sc-if>
+              </div>
+              <sc-if value="{{ hasUndo }}" hint-placeholder-val="{{ false }}">
+                <div style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:11px 16px;margin-bottom:12px;background:#25231D;border:1px solid rgba(236,231,219,0.08);border-radius:14px;">
+                  <span style="color:#9A9388;font-size:13px;">{{ undoLabel }}</span>
+                  <span onClick="{{ onUndo }}" style="color:#C2A079;font-size:13px;font-weight:700;cursor:pointer;">Отменить</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ detailHasBonus }}" hint-placeholder-val="{{ false }}">
+                <div onClick="{{ onBonus }}" style="width:100%;padding:14px;border-radius:15px;background:#25231D;border:1px solid rgba(231,223,201,0.3);color:#E7DFC9;font-size:14.5px;font-weight:600;text-align:center;cursor:pointer;margin-bottom:10px;">Выдать бесплатный из запаса · {{ detailBonus }}</div>
+              </sc-if>
+              <sc-if value="{{ detailBtnHot }}" hint-placeholder-val="{{ true }}">
+                <div onClick="{{ onSkip }}" style="width:100%;padding:15px;border-radius:15px;background:transparent;border:1px solid rgba(236,231,219,0.18);color:#9A9388;font-size:15px;font-weight:600;text-align:center;cursor:pointer;margin-bottom:10px;">Пропустить выдачу</div>
+                <div onClick="{{ onRedeem }}" style="width:100%;padding:17px;border-radius:16px;background:#E7DFC9;color:#1C1A15;font-size:16px;font-weight:700;text-align:center;cursor:pointer;box-shadow:0 0 24px rgba(231,223,201,0.3);">Выдать 6-й бесплатно ♥</div>
+              </sc-if>
+              <sc-if value="{{ detailBtnNormal }}">
+                <div onClick="{{ onCup }}" style="width:100%;padding:17px;border-radius:16px;background:#C2A079;color:#1C1A15;font-size:16px;font-weight:700;text-align:center;cursor:pointer;">+1 кофе</div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <!-- ===== ВЛАДЕЛЕЦ ===== -->
+      <sc-if value="{{ showOwner }}">
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+          <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+
+            <!-- СТАТИСТИКА -->
+            <sc-if value="{{ ownerStats }}">
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 22px 16px;flex:none;">
+                <div style="width:30px;height:30px;border:1.5px solid #C2A079;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:700;font-size:15px;">R</div>
+                <div style="display:flex;flex-direction:column;line-height:1.1;">
+                  <span style="color:#ECE7DB;font-size:14px;font-weight:600;">Статистика</span>
+                  <span style="color:#8C857A;font-size:10px;letter-spacing:1px;">РЕЖИМ ВЛАДЕЛЬЦА</span>
+                </div>
+              </div>
+              <div style="flex:1;overflow-y:auto;padding:6px 22px 22px;">
+                <div style="background:linear-gradient(135deg,#2c281f,#23211b);border:1px solid rgba(194,160,121,0.28);border-radius:20px;padding:24px;text-align:center;">
+                  <div style="color:#F3EEE2;font-size:46px;font-weight:800;letter-spacing:-1px;line-height:1;">{{ statToday }}</div>
+                  <div style="color:#9A9388;font-size:12.5px;margin-top:8px;letter-spacing:0.3px;">чашек отмечено сегодня</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+                  <div style="background:#25231D;border:1px solid rgba(194,160,121,0.12);border-radius:16px;padding:18px;">
+                    <div style="color:#ECE7DB;font-size:28px;font-weight:700;line-height:1;">{{ statGuests }}</div>
+                    <div style="color:#8C857A;font-size:11.5px;margin-top:6px;">гостей в базе</div>
+                  </div>
+                  <div style="background:#25231D;border:1px solid rgba(194,160,121,0.12);border-radius:16px;padding:18px;">
+                    <div style="color:#ECE7DB;font-size:28px;font-weight:700;line-height:1;">{{ statGifts }}</div>
+                    <div style="color:#8C857A;font-size:11.5px;margin-top:6px;">подарков выдано</div>
+                  </div>
+                  <div style="background:#25231D;border:1px solid rgba(231,223,201,0.22);border-radius:16px;padding:18px;">
+                    <div style="color:#E7DFC9;font-size:28px;font-weight:700;line-height:1;">{{ statHot }}</div>
+                    <div style="color:#8C857A;font-size:11.5px;margin-top:6px;">готовы к подарку</div>
+                  </div>
+                  <div style="background:#25231D;border:1px solid rgba(194,160,121,0.12);border-radius:16px;padding:18px;">
+                    <div style="color:#ECE7DB;font-size:28px;font-weight:700;line-height:1;">{{ statBaristas }}</div>
+                    <div style="color:#8C857A;font-size:11.5px;margin-top:6px;">барист</div>
+                  </div>
+                </div>
+
+                <div style="margin-top:26px;">
+                  <div style="color:#6E685E;font-size:10.5px;font-weight:700;letter-spacing:1.3px;padding:0 2px 4px;">ДИНАМИКА ВОЗВРАЩЕНИЯ ГОСТЕЙ</div>
+                  <div style="color:#5A554C;font-size:11px;padding:0 2px 14px;">кто покупает кофе чаще всего</div>
+                  <sc-for list="{{ loyalty }}" as="g" hint-placeholder-count="8">
+                    <div onClick="{{ g.open }}" style="display:flex;align-items:center;gap:12px;padding:9px 2px;cursor:pointer;">
+                      <span style="color:#6E685E;font-size:12px;font-weight:700;width:14px;flex:none;font-variant-numeric:tabular-nums;">{{ g.rank }}</span>
+                      <div style="width:30px;height:30px;border-radius:50%;background:#25231D;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:600;font-size:13px;flex:none;">{{ g.initial }}</div>
+                      <div style="flex:1;min-width:0;">
+                        <div style="color:#ECE7DB;font-size:13.5px;font-weight:600;">{{ g.name }}</div>
+                        <div style="height:6px;background:rgba(218,213,198,0.1);border-radius:3px;margin-top:6px;overflow:hidden;"><div style="{{ g.barStyle }}"></div></div>
+                      </div>
+                      <span style="color:#9A9388;font-size:12.5px;flex:none;font-variant-numeric:tabular-nums;">{{ g.total }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- БАРИСТЫ -->
+            <sc-if value="{{ ownerBaristas }}">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 22px 16px;flex:none;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:30px;height:30px;border:1.5px solid #C2A079;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:700;font-size:15px;">R</div>
+                  <div style="display:flex;flex-direction:column;line-height:1.1;">
+                    <span style="color:#ECE7DB;font-size:14px;font-weight:600;">Баристы</span>
+                    <span style="color:#8C857A;font-size:10px;letter-spacing:1px;">РЕЖИМ ВЛАДЕЛЬЦА</span>
+                  </div>
+                </div>
+                <div onClick="{{ onScan }}" style="width:38px;height:38px;border-radius:11px;background:#25231D;border:1px solid rgba(194,160,121,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#C2A079" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3"/><path d="M20 8V5a1 1 0 0 0-1-1h-3"/><path d="M4 16v3a1 1 0 0 0 1 1h3"/><path d="M20 16v3a1 1 0 0 0-1 1h-3"/><path d="M4 12h16"/></svg>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin:0 22px 14px;padding:12px 14px;background:#25231D;border:1px solid rgba(194,160,121,0.18);border-radius:14px;flex:none;">
+                <div style="width:13px;height:13px;border:1.5px solid #8C857A;border-radius:50%;flex:none;"></div>
+                <input value="{{ mQuery }}" onInput="{{ onMQuery }}" placeholder="Найти пользователя для назначения…" style="flex:1;background:transparent;border:none;outline:none;color:#ECE7DB;font-size:14px;padding:0;" />
+              </div>
+              <div style="flex:1;overflow-y:auto;">
+                <!-- режим поиска: кандидаты из базы -->
+                <sc-if value="{{ ownerSearching }}">
+                  <div style="color:#6E685E;font-size:10.5px;font-weight:700;letter-spacing:1.4px;padding:2px 22px 8px;">РЕЗУЛЬТАТЫ ПОИСКА</div>
+                  <sc-for list="{{ ownerSearch }}" as="a" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:12px;padding:13px 22px;border-bottom:1px solid rgba(236,231,219,0.05);">
+                      <div style="width:38px;height:38px;border-radius:50%;background:#25231D;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:600;font-size:15px;flex:none;">{{ a.initial }}</div>
+                      <div style="flex:1;min-width:0;">
+                        <div style="display:flex;align-items:center;gap:7px;">
+                          <span style="color:#ECE7DB;font-size:14.5px;font-weight:600;">{{ a.name }}</span>
+                          <sc-if value="{{ a.isBarista }}"><span style="color:#1C1A15;background:#C2A079;font-size:8.5px;font-weight:700;padding:2px 6px;border-radius:5px;letter-spacing:0.5px;">БАРИСТА</span></sc-if>
+                        </div>
+                        <div style="color:#6E685E;font-size:11px;font-family:monospace;margin-top:3px;">{{ a.phoneDisp }}</div>
+                      </div>
+                      <sc-if value="{{ a.isBarista }}">
+                        <div onClick="{{ a.toggle }}" style="flex:none;padding:8px 12px;border-radius:10px;border:1px solid rgba(217,138,106,0.45);color:#D98A6A;font-size:12px;font-weight:600;cursor:pointer;">Уволить</div>
+                      </sc-if>
+                      <sc-if value="{{ a.isClient }}">
+                        <div onClick="{{ a.toggle }}" style="flex:none;padding:8px 12px;border-radius:10px;border:1px solid rgba(194,160,121,0.4);color:#C2A079;font-size:12px;font-weight:600;cursor:pointer;">Сделать&nbsp;баристой</div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ ownerSearchEmpty }}">
+                    <div style="padding:34px 26px;text-align:center;color:#6E685E;font-size:13px;">Никого не нашлось</div>
+                  </sc-if>
+                </sc-if>
+                <!-- обычный режим: текущие баристы -->
+                <sc-if value="{{ ownerNotSearching }}">
+                  <div style="color:#6E685E;font-size:10.5px;font-weight:700;letter-spacing:1.4px;padding:2px 22px 8px;">ТЕКУЩИЕ БАРИСТЫ</div>
+                  <sc-for list="{{ baristaCurrent }}" as="a" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:12px;padding:13px 22px;border-bottom:1px solid rgba(236,231,219,0.05);">
+                      <div style="width:38px;height:38px;border-radius:50%;background:#25231D;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:600;font-size:15px;flex:none;">{{ a.initial }}</div>
+                      <div style="flex:1;min-width:0;">
+                        <span style="color:#ECE7DB;font-size:14.5px;font-weight:600;">{{ a.name }}</span>
+                        <div style="color:#6E685E;font-size:11px;font-family:monospace;margin-top:3px;">{{ a.phoneDisp }}</div>
+                      </div>
+                      <div onClick="{{ a.toggle }}" style="flex:none;padding:8px 12px;border-radius:10px;border:1px solid rgba(217,138,106,0.45);color:#D98A6A;font-size:12px;font-weight:600;cursor:pointer;">Уволить</div>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ ownerNoBaristas }}">
+                    <div style="padding:34px 26px;text-align:center;color:#6E685E;font-size:13px;line-height:1.5;">Баристов пока нет.<br><span style="font-size:12px;">Найдите пользователя через поиск выше.</span></div>
+                  </sc-if>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <!-- ГОСТИ · список (как у баристы) -->
+            <sc-if value="{{ ownerGuestsList }}">
+              <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 22px 16px;flex:none;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:30px;height:30px;border:1.5px solid #C2A079;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:700;font-size:15px;">R</div>
+                    <div style="display:flex;flex-direction:column;line-height:1.1;">
+                      <span style="color:#ECE7DB;font-size:14px;font-weight:600;">Гости</span>
+                      <span style="color:#8C857A;font-size:10px;letter-spacing:1px;">РЕЖИМ ВЛАДЕЛЬЦА</span>
+                    </div>
+                  </div>
+                  <div onClick="{{ onScan }}" style="width:38px;height:38px;border-radius:11px;background:#25231D;border:1px solid rgba(194,160,121,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#C2A079" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3"/><path d="M20 8V5a1 1 0 0 0-1-1h-3"/><path d="M4 16v3a1 1 0 0 0 1 1h3"/><path d="M20 16v3a1 1 0 0 0-1 1h-3"/><path d="M4 12h16"/></svg>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;margin:0 22px 14px;padding:12px 14px;background:#25231D;border:1px solid rgba(194,160,121,0.18);border-radius:14px;flex:none;">
+                  <div style="width:13px;height:13px;border:1.5px solid #8C857A;border-radius:50%;flex:none;"></div>
+                  <input value="{{ query }}" onInput="{{ onQuery }}" placeholder="Имя или номер телефона…" style="flex:1;background:transparent;border:none;outline:none;color:#ECE7DB;font-size:14px;padding:0;" />
+                </div>
+                <div style="flex:1;overflow-y:auto;">
+                  <sc-for list="{{ list }}" as="client" hint-placeholder-count="6">
+                    <div onClick="{{ client.open }}" style="display:flex;align-items:center;gap:12px;padding:13px 22px;border-bottom:1px solid rgba(236,231,219,0.05);cursor:pointer;">
+                      <div style="width:38px;height:38px;border-radius:50%;background:#25231D;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:600;font-size:15px;flex:none;">{{ client.initial }}</div>
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                          <span style="color:#ECE7DB;font-size:14.5px;font-weight:600;">{{ client.name }}</span>
+                          <span style="color:#6E685E;font-size:11px;font-family:monospace;">{{ client.phoneDisp }}</span>
+                        </div>
+                        <div style="display:flex;gap:3px;">
+                          <sc-for list="{{ client.bars }}" as="bar" hint-placeholder-count="6"><div style="{{ bar.style }}"></div></sc-for>
+                        </div>
+                      </div>
+                      <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                        <span style="color:#9A9388;font-size:12px;font-variant-numeric:tabular-nums;">{{ client.pct }}</span>
+                        <sc-if value="{{ client.hot }}"><span style="color:#1C1A15;background:#E7DFC9;font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;letter-spacing:0.4px;">ПОДАРОК</span></sc-if>
+                      </div>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ notFound }}">
+                    <div style="padding:40px 26px;text-align:center;color:#6E685E;font-size:14px;">Гость не найден.<br><span style="font-size:12px;">Попросите его открыть бота Radi coffee.</span></div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- ГОСТИ · карточка (как у баристы) -->
+            <sc-if value="{{ ownerGuestsCard }}">
+              <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 22px;flex:none;">
+                  <div onClick="{{ onBack }}" style="width:32px;height:32px;border-radius:50%;border:1px solid rgba(236,231,219,0.18);display:flex;align-items:center;justify-content:center;color:#9A9388;font-size:17px;cursor:pointer;">‹</div>
+                  <span style="color:#8C857A;font-size:13px;font-weight:500;">Карточка гостя</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:20px 26px 28px;overflow-y:auto;">
+                  <div style="width:74px;height:74px;border-radius:50%;background:#25231D;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:700;font-size:31px;margin-bottom:16px;">{{ detailInitial }}</div>
+                  <div style="color:#F3EEE2;font-size:24px;font-weight:700;letter-spacing:-0.3px;">{{ detailName }}</div>
+                  <div style="color:#8C857A;font-size:13px;font-family:monospace;margin-top:5px;">{{ detailPhone }}</div>
+                  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;justify-items:center;margin:30px 0 18px;">
+                    <sc-for list="{{ detailSlots }}" as="s" hint-placeholder-count="6"><div style="{{ s.style }}">{{ s.label }}</div></sc-for>
+                  </div>
+                  <div style="color:#C2A079;font-size:13px;font-weight:600;">{{ detailCycle }}</div>
+                  <div style="flex:1;min-height:24px;"></div>
+                  <div style="display:flex;align-items:center;justify-content:center;gap:16px;color:#6E685E;font-size:12px;margin-bottom:16px;">
+                    <span><span style="color:#9A9388;font-weight:700;">{{ detailTotal }}</span> чашек всего</span>
+                    <span><span style="color:#9A9388;font-weight:700;">{{ detailFree }}</span> бесплатных</span>
+                    <sc-if value="{{ detailHasBonus }}"><span><span style="color:#E7DFC9;font-weight:700;">{{ detailBonus }}</span> в запасе</span></sc-if>
+                  </div>
+                  <sc-if value="{{ hasUndo }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:11px 16px;margin-bottom:12px;background:#25231D;border:1px solid rgba(236,231,219,0.08);border-radius:14px;">
+                      <span style="color:#9A9388;font-size:13px;">{{ undoLabel }}</span>
+                      <span onClick="{{ onUndo }}" style="color:#C2A079;font-size:13px;font-weight:700;cursor:pointer;">Отменить</span>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ detailHasBonus }}" hint-placeholder-val="{{ false }}">
+                    <div onClick="{{ onBonus }}" style="width:100%;padding:14px;border-radius:15px;background:#25231D;border:1px solid rgba(231,223,201,0.3);color:#E7DFC9;font-size:14.5px;font-weight:600;text-align:center;cursor:pointer;margin-bottom:10px;">Выдать бесплатный из запаса · {{ detailBonus }}</div>
+                  </sc-if>
+                  <sc-if value="{{ detailBtnHot }}" hint-placeholder-val="{{ true }}">
+                    <div onClick="{{ onSkip }}" style="width:100%;padding:15px;border-radius:15px;background:transparent;border:1px solid rgba(236,231,219,0.18);color:#9A9388;font-size:15px;font-weight:600;text-align:center;cursor:pointer;margin-bottom:10px;">Пропустить выдачу</div>
+                    <div onClick="{{ onRedeem }}" style="width:100%;padding:17px;border-radius:16px;background:#E7DFC9;color:#1C1A15;font-size:16px;font-weight:700;text-align:center;cursor:pointer;box-shadow:0 0 24px rgba(231,223,201,0.3);">Выдать 6-й бесплатно ♥</div>
+                  </sc-if>
+                  <sc-if value="{{ detailBtnNormal }}">
+                    <div onClick="{{ onCup }}" style="width:100%;padding:17px;border-radius:16px;background:#C2A079;color:#1C1A15;font-size:16px;font-weight:700;text-align:center;cursor:pointer;">+1 кофе</div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-if>
+
+          </div>
+
+          <!-- НИЖНЯЯ НАВИГАЦИЯ ВЛАДЕЛЬЦА -->
+          <sc-if value="{{ ownerNav }}">
+            <div style="display:flex;border-top:1px solid rgba(236,231,219,0.08);background:#1C1A15;flex:none;">
+              <div onClick="{{ goStats }}" style="{{ navStats }}"><div style="{{ dotStats }}"></div>Статистика</div>
+              <div onClick="{{ goBaristas }}" style="{{ navBaristas }}"><div style="{{ dotBaristas }}"></div>Баристы</div>
+              <div onClick="{{ goGuests }}" style="{{ navGuests }}"><div style="{{ dotGuests }}"></div>Гости</div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- ===== ОВЕРЛЕЙ СКАНИРОВАНИЯ QR ===== -->
+      <sc-if value="{{ scanning }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;background:rgba(8,7,5,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;">
+          <div style="color:#ECE7DB;font-size:15px;font-weight:600;">Наведите на QR гостя</div>
+          <div style="position:relative;width:200px;height:200px;">
+            <div style="position:absolute;top:0;left:0;width:34px;height:34px;border-top:3px solid #C2A079;border-left:3px solid #C2A079;border-top-left-radius:10px;"></div>
+            <div style="position:absolute;top:0;right:0;width:34px;height:34px;border-top:3px solid #C2A079;border-right:3px solid #C2A079;border-top-right-radius:10px;"></div>
+            <div style="position:absolute;bottom:0;left:0;width:34px;height:34px;border-bottom:3px solid #C2A079;border-left:3px solid #C2A079;border-bottom-left-radius:10px;"></div>
+            <div style="position:absolute;bottom:0;right:0;width:34px;height:34px;border-bottom:3px solid #C2A079;border-right:3px solid #C2A079;border-bottom-right-radius:10px;"></div>
+            <div style="position:absolute;left:8px;right:8px;height:2px;background:#E7DFC9;box-shadow:0 0 14px #E7DFC9;animation:scanline 1.2s ease-in-out infinite;"></div>
+          </div>
+          <div onClick="{{ onScanCancel }}" style="padding:11px 24px;border-radius:13px;border:1px solid rgba(236,231,219,0.2);color:#9A9388;font-size:14px;font-weight:600;cursor:pointer;">Отмена</div>
+        </div>
+      </sc-if>
+
+      <!-- ===== ДИАЛОГ ПОДТВЕРЖДЕНИЯ ===== -->
+      <sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;background:rgba(8,7,5,0.62);display:flex;flex-direction:column;justify-content:flex-end;">
+          <div onClick="{{ onCancelConfirm }}" style="flex:1;"></div>
+          <div style="background:#221F19;border-top-left-radius:26px;border-top-right-radius:26px;padding:26px 24px 30px;border-top:1px solid rgba(194,160,121,0.18);">
+            <div style="color:#F3EEE2;font-size:19px;font-weight:700;text-align:center;">{{ confirmTitle }}</div>
+            <div style="color:#8C857A;font-size:13.5px;text-align:center;margin-top:8px;line-height:1.45;">{{ confirmSub }}</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:24px;">
+              <sc-if value="{{ confirmDanger }}">
+                <div onClick="{{ onConfirm }}" style="width:100%;padding:16px;border-radius:15px;background:#D98A6A;color:#1C1A15;font-size:16px;font-weight:700;text-align:center;cursor:pointer;">{{ confirmCta }}</div>
+              </sc-if>
+              <sc-if value="{{ confirmSafe }}">
+                <div onClick="{{ onConfirm }}" style="width:100%;padding:16px;border-radius:15px;background:#C2A079;color:#1C1A15;font-size:16px;font-weight:700;text-align:center;cursor:pointer;">{{ confirmCta }}</div>
+              </sc-if>
+              <div onClick="{{ onCancelConfirm }}" style="width:100%;padding:16px;border-radius:15px;background:transparent;border:1px solid rgba(236,231,219,0.16);color:#9A9388;font-size:16px;font-weight:600;text-align:center;cursor:pointer;">Отмена</div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <!-- ===== ДЕМО-ПЕРЕКЛЮЧАТЕЛЬ РОЛИ ===== -->
+  <sc-if value="{{ showSwitch }}">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="color:#8a857c;font-size:12px;font-weight:600;">Демо · ваша роль:</span>
+      <div style="display:flex;background:#fff;border-radius:13px;padding:4px;gap:3px;box-shadow:0 3px 12px rgba(60,48,30,0.1);">
+        <div onClick="{{ setClient }}" style="{{ tabClient }}">Клиент</div>
+        <div onClick="{{ setBarista }}" style="{{ tabBarista }}">Бариста</div>
+        <div onClick="{{ setOwner }}" style="{{ tabOwner }}">Владелец</div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    onboarded: false,
+    onboardStep: 'phone',   // 'phone' | 'name'
+    me: { name: '', phone: '', count: 3, total: 9, bonus: 0, freeGiven: 1 },
+    draftName: '',
+    role: 'client',         // демо: client | barista | owner
+    accounts: [],
+    bScreen: 'list',        // 'list' | 'card'
+    selectedId: null,
+    query: '',
+    pending: null,          // {kind:'cup'} | {kind:'role', id, toBarista, name}
+    undo: null,             // {id, prevCount, prevTotal, wasRedeem}
+    ownerTab: 'stats',      // 'stats' | 'baristas' | 'guests'
+    mQuery: '',             // поиск пользователей для назначения баристой
+    scanning: false,        // оверлей сканирования QR
+    todayCount: 23,         // чашек отмечено сегодня (демо)
+    loyalty: [],            // рейтинг возвращаемости (снимок при запуске)
+  };
+
+  K_ONB = 'radi_v5_onboarded';
+  K_ME = 'radi_v5_me';
+  K_ACC = 'radi_v5_accounts';
+  SHARED_PHONE = '9162003590';
+
+  seed() {
+    const base = [
+      { id: 1,  name: 'Алексей',   phone: '9162854827', count: 5, total: 23, role: 'barista' },
+      { id: 2,  name: 'Ольга',     phone: '9035118801', count: 5, total: 11, role: 'client' },
+      { id: 3,  name: 'Дмитрий',   phone: '9257607634', count: 4, total: 16, role: 'client' },
+      { id: 4,  name: 'Мария',     phone: '9991201290', count: 2, total: 8,  role: 'client' },
+      { id: 5,  name: 'Сергей',    phone: '9012333345', count: 3, total: 9,  role: 'client' },
+      { id: 6,  name: 'Иван',      phone: '9054422156', count: 1, total: 7,  role: 'client' },
+      { id: 7,  name: 'Анна',      phone: '9267000518', count: 0, total: 6,  role: 'client' },
+      { id: 8,  name: 'Екатерина', phone: '9168809072', count: 4, total: 28, role: 'client' },
+      { id: 9,  name: 'Михаил',    phone: '9031472050', count: 2, total: 41, role: 'client' },
+      { id: 10, name: 'Дарья',     phone: '9099912233', count: 5, total: 37, role: 'client' },
+      { id: 11, name: 'Роман',     phone: '9261114488', count: 1, total: 19, role: 'client' },
+      { id: 12, name: 'Наталья',   phone: '9165557701', count: 3, total: 25, role: 'client' },
+      { id: 13, name: 'Артём',     phone: '9037778812', count: 4, total: 33, role: 'client' },
+      { id: 14, name: 'Юлия',      phone: '9259994400', count: 0, total: 14, role: 'client' },
+      { id: 15, name: 'Павел',     phone: '9013336677', count: 2, total: 22, role: 'client' },
+      { id: 16, name: 'Елена',     phone: '9268882244', count: 5, total: 30, role: 'client' },
+      { id: 17, name: 'Никита',    phone: '9035551199', count: 1, total: 6,  role: 'client' },
+      { id: 18, name: 'Татьяна',   phone: '9167773355', count: 3, total: 18, role: 'client' },
+      { id: 19, name: 'Андрей',    phone: '9099998800', count: 2, total: 12, role: 'client' },
+      { id: 20, name: 'Светлана',  phone: '9261239988', count: 4, total: 27, role: 'client' },
+    ];
+    return base.map(c => ({ ...c, bonus: 0, freeGiven: Math.floor(c.total / 6) }));
+  }
+
+  buildLoyalty(accounts) {
+    const max = Math.max(1, ...accounts.map(c => c.total));
+    return accounts.slice().sort((a, b) => b.total - a.total).slice(0, 20).map((c, i) => ({
+      key: c.id, rank: i + 1, name: c.name, initial: (c.name[0] || '?').toUpperCase(), total: c.total,
+      barStyle: { width: Math.round(c.total / max * 100) + '%', height: '100%', borderRadius: '3px', background: i === 0 ? '#E7DFC9' : '#C2A079' },
+      open: () => this.openGuest(c.id),
+    }));
+  }
+
+  openGuest(id) { this.setState({ ownerTab: 'guests', bScreen: 'card', selectedId: id, pending: null, undo: null, query: '' }); }
+
+  componentDidMount() {
+    let accounts, me, onboarded = false;
+    try { accounts = JSON.parse(localStorage.getItem(this.K_ACC) || 'null'); } catch (e) {}
+    try { me = JSON.parse(localStorage.getItem(this.K_ME) || 'null'); } catch (e) {}
+    try { onboarded = localStorage.getItem(this.K_ONB) === '1'; } catch (e) {}
+    if (!accounts || !Array.isArray(accounts) || !accounts.length || !('freeGiven' in accounts[0])) accounts = this.seed();
+    const patch = { accounts, loyalty: this.buildLoyalty(accounts) };
+    if (onboarded && me && me.name) {
+      me = { bonus: 0, freeGiven: Math.floor((me.total || 0) / 6), ...me };
+      patch.onboarded = true; patch.me = me;
+    }
+    this.setState(patch);
+  }
+
+  persistAccounts(accounts) { try { localStorage.setItem(this.K_ACC, JSON.stringify(accounts)); } catch (e) {} }
+
+  normalizePhone(v) {
+    let d = (v || '').replace(/\D/g, '');
+    while (d.length && (d[0] === '7' || d[0] === '8')) d = d.slice(1);
+    return d.slice(0, 10);
+  }
+  formatNat(d) {
+    d = d || '';
+    const a = d.slice(0, 3), b = d.slice(3, 6), c = d.slice(6, 8), e = d.slice(8, 10);
+    let s = a;
+    if (b) s += ' ' + b;
+    if (c) s += '-' + c;
+    if (e) s += '-' + e;
+    return s;
+  }
+  displayPhone(d) { const n = this.formatNat(d); return n ? '+7 ' + n : '+7'; }
+
+  buildBars(count) {
+    const bars = [];
+    for (let i = 0; i < 5; i++) bars.push({ key: 'b' + i, style: {
+      flex: '1', height: '4px', borderRadius: '2px',
+      background: i < count ? '#C2A079' : 'rgba(218,213,198,0.14)',
+    }});
+    const hot = count >= 5;
+    bars.push({ key: 'g', style: {
+      flex: '1', height: '4px', borderRadius: '2px',
+      background: hot ? '#E7DFC9' : 'rgba(218,213,198,0.14)',
+      boxShadow: hot ? '0 0 6px rgba(231,223,201,0.7)' : 'none',
+    }});
+    return bars;
+  }
+
+  buildSlots(count) {
+    const base = { width: '48px', height: '48px', borderRadius: '50%', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', fontSize: '19px', fontWeight: '500' };
+    const slots = [];
+    for (let i = 0; i < 5; i++) {
+      const filled = i < count;
+      slots.push({ key: 's' + i, label: '', style: { ...base,
+        background: filled ? '#DAD5C6' : 'transparent',
+        border: filled ? 'none' : '1.5px solid rgba(218,213,198,0.22)' } });
+    }
+    const active = count >= 5;
+    slots.push({ key: 'g', label: '♥', style: { ...base,
+      color: active ? '#1C1A15' : 'rgba(218,213,198,0.4)',
+      background: active ? '#E7DFC9' : 'transparent',
+      border: active ? 'none' : '1.5px dashed rgba(218,213,198,0.3)',
+      boxShadow: active ? '0 0 16px rgba(231,223,201,0.45)' : 'none' } });
+    return slots;
+  }
+
+  // ===== QR-код =====
+  hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  rng(seed) { let s = (seed >>> 0) || 1; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+  rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+  drawBean(ctx, cx, cy, r, color, bg) {
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(-0.5);
+    ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(0, 0, r * 0.62, r, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = bg; ctx.lineWidth = Math.max(1, r * 0.18); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, -r * 0.78); ctx.quadraticCurveTo(r * 0.5, 0, 0, r * 0.78); ctx.stroke();
+    ctx.restore();
+  }
+  drawCroissant(ctx, cx, cy, r, color, bg) {
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(0.15);
+    ctx.fillStyle = color; ctx.beginPath();
+    ctx.arc(0, 0, r, Math.PI * 0.18, Math.PI * 0.82, false);
+    ctx.arc(0, r * 0.55, r * 0.82, Math.PI * 0.82, Math.PI * 0.18, true);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = bg; ctx.lineWidth = Math.max(1, r * 0.13); ctx.lineCap = 'round';
+    for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(i * r * 0.3, r * 0.02); ctx.lineTo(i * r * 0.3 + r * 0.1, r * 0.45); ctx.stroke(); }
+    ctx.restore();
+  }
+  drawQR(canvas) {
+    if (!canvas) return;
+    const me = this.state.me;
+    const data = (me.name || '?') + '|' + (me.phone || '');
+    const N = 21, mod = 9, size = N * mod, dpr = 2;       // крупные модули — легче для камеры
+    canvas.width = size * dpr; canvas.height = size * dpr;
+    canvas.style.width = size + 'px'; canvas.style.height = size + 'px';
+    const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const cream = '#EDE6D6', dark = '#1C1A15', accent = '#A9712F';
+    ctx.fillStyle = cream; ctx.fillRect(0, 0, size, size);
+    const rnd = this.rng(this.hashStr(data));
+    const inF = (x, y) => { const f = (fx, fy) => x >= fx && x < fx + 7 && y >= fy && y < fy + 7; return f(0, 0) || f(N - 7, 0) || f(0, N - 7); };
+    const c0 = 8, c1 = 13;                                 // центральный логотип 5×5
+    const inL = (x, y) => x >= c0 && x < c1 && y >= c0 && y < c1;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      if (inF(x, y) || inL(x, y)) continue;
+      const r = rnd();
+      if (r < 0.07) { this.drawBean(ctx, x * mod + mod / 2, y * mod + mod / 2, mod * 0.46, accent, cream); }
+      else if (r < 0.5) { ctx.fillStyle = dark; ctx.fillRect(x * mod + 0.5, y * mod + 0.5, mod - 1, mod - 1); }
+    }
+    const fp = (fx, fy) => { const X = fx * mod, Y = fy * mod;
+      ctx.fillStyle = dark; this.rr(ctx, X, Y, 7 * mod, 7 * mod, 6); ctx.fill();
+      ctx.fillStyle = cream; this.rr(ctx, X + mod, Y + mod, 5 * mod, 5 * mod, 4); ctx.fill();
+      ctx.fillStyle = dark; this.rr(ctx, X + 2 * mod, Y + 2 * mod, 3 * mod, 3 * mod, 3); ctx.fill(); };
+    fp(0, 0); fp(N - 7, 0); fp(0, N - 7);
+    const L = c0 * mod, S = 5 * mod;
+    ctx.fillStyle = cream; this.rr(ctx, L - 3, L - 3, S + 6, S + 6, 9); ctx.fill();
+    this.drawBean(ctx, L + S / 2, L + S / 2, S * 0.42, dark, cream);
+  }
+
+  // ===== сканирование =====
+  scanStart() {
+    if (this.state.scanning) return;
+    const pool = this.state.accounts.filter(c => c.role !== 'barista');
+    if (!pool.length) return;
+    const t = pool[Math.floor(Math.random() * pool.length)];
+    this.setState({ scanning: true });
+    this._scanT = setTimeout(() => this.resolveScan(t.id), 1300);
+  }
+  resolveScan(id) {
+    const patch = { scanning: false, selectedId: id, bScreen: 'card', pending: null, undo: null, query: '' };
+    if (this.state.role === 'owner') patch.ownerTab = 'guests';
+    this.setState(patch);
+  }
+  scanCancel() { clearTimeout(this._scanT); this.setState({ scanning: false }); }
+
+  // онбординг
+  onShare() { this.setState({ onboardStep: 'name', me: { ...this.state.me, phone: this.SHARED_PHONE } }); }
+  finish() {
+    const name = this.state.draftName.trim();
+    if (!name) return;
+    const me = { ...this.state.me, name };
+    try { localStorage.setItem(this.K_ONB, '1'); localStorage.setItem(this.K_ME, JSON.stringify(me)); } catch (e) {}
+    this.setState({ onboarded: true, me, role: 'client' });
+  }
+
+  // бариста
+  open(id) { this.setState({ bScreen: 'card', selectedId: id, pending: null, undo: null }); }
+  back() { this.setState({ bScreen: 'list', pending: null, undo: null }); }
+
+  askCup() { this.setState({ pending: { kind: 'cup' } }); }
+  askRedeem() { this.setState({ pending: { kind: 'redeem' } }); }
+  askSkip() { this.setState({ pending: { kind: 'skip' } }); }
+  askBonus() { this.setState({ pending: { kind: 'bonus' } }); }
+  askRole(id) {
+    const acc = this.state.accounts.find(c => c.id === id);
+    if (!acc) return;
+    this.setState({ pending: { kind: 'role', id, toBarista: acc.role !== 'barista', name: acc.name } });
+  }
+  cancelConfirm() { this.setState({ pending: null }); }
+
+  confirm() {
+    const p = this.state.pending;
+    if (!p) return;
+    if (p.kind === 'role') {
+      this.setState(s => {
+        const accounts = s.accounts.map(c => c.id === p.id
+          ? { ...c, role: c.role === 'barista' ? 'client' : 'barista' } : c);
+        this.persistAccounts(accounts);
+        return { accounts, pending: null };
+      });
+      return;
+    }
+    this.setState(s => {
+      const acc = s.accounts.find(c => c.id === s.selectedId);
+      if (!acc) return { pending: null };
+      const snap = { id: acc.id, count: acc.count, total: acc.total, bonus: acc.bonus || 0, freeGiven: acc.freeGiven || 0 };
+      let label = '';
+      const accounts = s.accounts.map(c => {
+        if (c.id !== acc.id) return c;
+        const d = { ...c, bonus: c.bonus || 0, freeGiven: c.freeGiven || 0 };
+        if (p.kind === 'cup') { d.count += 1; d.total += 1; label = 'Кофе отмечен'; }
+        else if (p.kind === 'redeem') { d.count = 0; d.total += 1; d.freeGiven += 1; label = 'Подарок выдан'; }
+        else if (p.kind === 'skip') { d.count = 0; d.total += 1; d.bonus = Math.min(5, d.bonus + 1); label = 'Выдача пропущена'; }
+        else if (p.kind === 'bonus') { if (d.bonus > 0) { d.bonus -= 1; d.total += 1; d.freeGiven += 1; } label = 'Бесплатный выдан'; }
+        return d;
+      });
+      this.persistAccounts(accounts);
+      return { accounts, pending: null, undo: { snap, label }, todayCount: s.todayCount + 1 };
+    });
+  }
+
+  undoAction() {
+    this.setState(s => {
+      if (!s.undo) return {};
+      const sn = s.undo.snap;
+      const accounts = s.accounts.map(c => c.id === sn.id
+        ? { ...c, count: sn.count, total: sn.total, bonus: sn.bonus, freeGiven: sn.freeGiven } : c);
+      this.persistAccounts(accounts);
+      return { accounts, undo: null, todayCount: Math.max(0, s.todayCount - 1) };
+    });
+  }
+
+  setRole(role) { this.setState({ role, bScreen: 'list', pending: null, undo: null, query: '', ownerTab: 'stats', mQuery: '' }); }
+  setOwnerTab(tab) { this.setState({ ownerTab: tab, bScreen: 'list', selectedId: null, pending: null, undo: null, query: '', mQuery: '' }); }
+
+  renderVals() {
+    const s = this.state;
+    const q = s.query.trim().toLowerCase();
+    const qDigits = this.normalizePhone(s.query);
+
+    const accounts = s.accounts.map(c => ({
+      ...c,
+      initial: (c.name[0] || '?').toUpperCase(),
+      phoneDisp: this.displayPhone(c.phone),
+      hot: c.count >= 5,
+      pct: c.count + '/6',
+      bars: this.buildBars(c.count),
+      isBarista: c.role === 'barista',
+      isClient: c.role !== 'barista',
+      open: () => this.open(c.id),
+      toggle: () => this.askRole(c.id),
+    }));
+
+    let list = accounts;
+    if (q) list = accounts.filter(c => c.name.toLowerCase().includes(q) || (qDigits && c.phone.includes(qDigits)));
+    list = list.slice().sort((a, b) => (b.hot - a.hot) || a.name.localeCompare(b.name, 'ru'));
+
+    const sel = s.accounts.find(c => c.id === s.selectedId);
+    const d = sel || { name: '', phone: '', count: 0, total: 0, bonus: 0, freeGiven: 0 };
+    const dHot = d.count >= 5;
+    const dBonus = d.bonus || 0;
+
+    const me = s.me;
+    const meHot = me.count >= 5;
+
+    const p = s.pending;
+    let cTitle = '', cSub = '', cCta = 'Подтвердить', cDanger = false;
+    if (p && p.kind === 'cup') {
+      cTitle = 'Отметить кофе?';
+      cSub = `${d.name} · станет ${d.count + 1} из 5`;
+      cCta = 'Отметить кофе';
+    } else if (p && p.kind === 'redeem') {
+      cTitle = 'Выдать 6-й кофе бесплатно?';
+      cSub = `${d.name} — подарок, прогресс обнулится`;
+      cCta = 'Выдать подарок';
+    } else if (p && p.kind === 'skip') {
+      cTitle = 'Пропустить выдачу?';
+      cSub = dBonus >= 5 ? 'Запас уже полон (5). Прогресс обнулится без накопления.' : 'Гость оплатил кофе — бесплатный отложим в запас (макс 5).';
+      cCta = 'Пропустить';
+    } else if (p && p.kind === 'bonus') {
+      cTitle = 'Выдать бесплатный из запаса?';
+      cSub = `${d.name} · в запасе ${dBonus}`;
+      cCta = 'Выдать бесплатный';
+    } else if (p && p.kind === 'role') {
+      cTitle = p.toBarista ? 'Назначить баристой?' : 'Уволить баристу?';
+      cSub = p.toBarista ? `${p.name} получит доступ к отметке кофе` : `${p.name} вернётся к обычному аккаунту`;
+      cCta = p.toBarista ? 'Назначить' : 'Уволить';
+      cDanger = !p.toBarista;
+    }
+
+    const tab = (active) => ({
+      padding: '8px 15px', borderRadius: '9px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+      background: active ? '#1C1A15' : 'transparent',
+      color: active ? '#ECE7DB' : '#6b675f',
+      transition: 'all .15s',
+    });
+
+    // ===== ВЛАДЕЛЕЦ: статистика и управление =====
+    const allAcc = s.accounts;
+    const baristaCurrent = accounts.filter(c => c.isBarista);
+    const stat = {
+      cups: allAcc.reduce((a, c) => a + c.total, 0),
+      guests: allAcc.length,
+      gifts: allAcc.reduce((a, c) => a + Math.floor(c.total / 6), 0),
+      hot: allAcc.filter(c => c.count >= 5).length,
+      baristas: baristaCurrent.length,
+    };
+
+    const mq = s.mQuery.trim().toLowerCase();
+    const mDigits = this.normalizePhone(s.mQuery);
+    const ownerSearching = mq.length > 0;
+    let ownerSearch = accounts.filter(c => c.name.toLowerCase().includes(mq) || (mDigits && c.phone.includes(mDigits)));
+    ownerSearch = ownerSearch.slice().sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+
+    const oNav = (active) => ({
+      flex: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+      padding: '10px 0 4px', cursor: 'pointer',
+      color: active ? '#C2A079' : '#6E685E', fontSize: '11px', fontWeight: active ? '700' : '500',
+    });
+    const oDot = (active) => ({
+      width: '5px', height: '5px', borderRadius: '50%',
+      background: active ? '#C2A079' : 'transparent',
+    });
+
+    return {
+      showOnboard: !s.onboarded,
+      stepPhone: s.onboardStep === 'phone',
+      stepName: s.onboardStep === 'name',
+      onShare: () => this.onShare(),
+      myPhoneDisp: this.displayPhone(me.phone),
+      draftName: s.draftName,
+      onName: (e) => this.setState({ draftName: (e.target.value || '').replace(/[^А-Яа-яЁё \-]/g, '') }),
+      canFinish: s.draftName.trim().length > 0,
+      cantFinish: s.draftName.trim().length === 0,
+      onFinish: () => this.finish(),
+
+      showClient:  s.onboarded && s.role === 'client',
+      showBarista: s.onboarded && s.role === 'barista',
+      showOwner:   s.onboarded && s.role === 'owner',
+      showSwitch:  s.onboarded,
+
+      // клиент
+      myName: me.name,
+      myTotal: me.total,
+      myFree: me.freeGiven || 0,
+      mySlots: this.buildSlots(me.count),
+      myStatus: meHot ? 'Заберите 6-й кофе бесплатно ♥' : `До подарка осталось: ${5 - me.count}`,
+
+      // бариста
+      bList: s.bScreen === 'list',
+      bCard: s.bScreen === 'card',
+      list,
+      notFound: q.length > 0 && list.length === 0,
+      query: s.query,
+      onQuery: (e) => this.setState({ query: e.target.value }),
+      detailName: d.name,
+      detailInitial: (d.name[0] || '?').toUpperCase(),
+      detailPhone: this.displayPhone(d.phone),
+      detailTotal: d.total,
+      detailFree: d.freeGiven || 0,
+      detailBonus: dBonus,
+      detailHasBonus: dBonus > 0,
+      detailSlots: this.buildSlots(d.count),
+      detailCycle: dHot ? 'Шестой кофе — в подарок' : `${d.count} из 5 до подарка`,
+      detailBtnHot: dHot,
+      detailBtnNormal: !dHot,
+      onCup: () => this.askCup(),
+      onRedeem: () => this.askRedeem(),
+      onSkip: () => this.askSkip(),
+      onBonus: () => this.askBonus(),
+      onBack: () => this.back(),
+
+      // подтверждение
+      confirmOpen: !!p,
+      confirmTitle: cTitle,
+      confirmSub: cSub,
+      confirmCta: cCta,
+      confirmDanger: cDanger,
+      confirmSafe: !cDanger,
+      onConfirm: () => this.confirm(),
+      onCancelConfirm: () => this.cancelConfirm(),
+
+      // отмена действия
+      hasUndo: !!s.undo,
+      undoLabel: s.undo ? s.undo.label : '',
+      onUndo: () => this.undoAction(),
+
+      // владелец
+      accounts,
+      ownerStats:       s.onboarded && s.role === 'owner' && s.ownerTab === 'stats',
+      ownerBaristas:    s.onboarded && s.role === 'owner' && s.ownerTab === 'baristas',
+      ownerGuestsList:  s.onboarded && s.role === 'owner' && s.ownerTab === 'guests' && s.bScreen === 'list',
+      ownerGuestsCard:  s.onboarded && s.role === 'owner' && s.ownerTab === 'guests' && s.bScreen === 'card',
+      ownerNav:         s.onboarded && s.role === 'owner' && !(s.ownerTab === 'guests' && s.bScreen === 'card'),
+      statCups: stat.cups,
+      statToday: s.todayCount,
+      loyalty: s.loyalty || [],
+      qrRef: (el) => { if (el) this.drawQR(el); },
+      onScan: () => this.scanStart(),
+      scanning: s.scanning,
+      onScanCancel: () => this.scanCancel(),
+      statGuests: stat.guests,
+      statGifts: stat.gifts,
+      statHot: stat.hot,
+      statBaristas: stat.baristas,
+      baristaCurrent,
+      ownerSearch,
+      ownerSearching,
+      ownerNotSearching: !ownerSearching,
+      ownerNoBaristas: baristaCurrent.length === 0,
+      ownerSearchEmpty: ownerSearching && ownerSearch.length === 0,
+      mQuery: s.mQuery,
+      onMQuery: (e) => this.setState({ mQuery: e.target.value }),
+      goStats: () => this.setOwnerTab('stats'),
+      goBaristas: () => this.setOwnerTab('baristas'),
+      goGuests: () => this.setOwnerTab('guests'),
+      navStats: oNav(s.ownerTab === 'stats'),
+      navBaristas: oNav(s.ownerTab === 'baristas'),
+      navGuests: oNav(s.ownerTab === 'guests'),
+      dotStats: oDot(s.ownerTab === 'stats'),
+      dotBaristas: oDot(s.ownerTab === 'baristas'),
+      dotGuests: oDot(s.ownerTab === 'guests'),
+
+      // демо-переключатель
+      setClient: () => this.setRole('client'),
+      setBarista: () => this.setRole('barista'),
+      setOwner: () => this.setRole('owner'),
+      tabClient: tab(s.role === 'client'),
+      tabBarista: tab(s.role === 'barista'),
+      tabOwner: tab(s.role === 'owner'),
+    };
+  }
+}
+</script>
+</body>
+</html>

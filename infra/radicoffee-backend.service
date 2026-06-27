@@ -1,0 +1,16 @@
+[Unit]
+Description=Radi Coffee backend (FastAPI + SQLite)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/radicoffee/backend
+EnvironmentFile=/opt/radicoffee/backend/.env
+ExecStart=/opt/radicoffee/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8014 --workers 1
+Restart=on-failure
+RestartSec=3
+# слабый/тесный хост — ограничим аппетит
+MemoryMax=200M
+
+[Install]
+WantedBy=multi-user.target

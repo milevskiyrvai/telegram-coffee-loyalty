@@ -1,0 +1,15 @@
+[Unit]
+Description=Radi Coffee Telegram bot (aiogram polling)
+After=network.target radicoffee-backend.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/radicoffee/backend
+EnvironmentFile=/opt/radicoffee/backend/.env
+ExecStart=/opt/radicoffee/backend/.venv/bin/python bot.py
+Restart=on-failure
+RestartSec=5
+MemoryMax=220M
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,35 @@
+/* Базовые стили — повторяют прототип (Manrope, тёмная тема, скрытый скролл). */
+:root { color-scheme: dark; }
+* { box-sizing: border-box; scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #1C1A15;
+  color: #ECE7DB;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input { font-family: 'Manrope', sans-serif; }
+input::placeholder { color: #6E685E; }
+
+@keyframes scanline { 0% { top: 8px } 50% { top: 184px } 100% { top: 8px } }
+@keyframes spin { to { transform: rotate(360deg) } }
+
+/* Контейнер приложения: на телефоне — весь экран; в браузере (dev) — рамка телефона. */
+#root { min-height: 100%; }
+
+.app-screen {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #1C1A15;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}

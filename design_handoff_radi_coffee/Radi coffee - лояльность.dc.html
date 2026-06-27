@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="design_doc_mode" content="canvas">
+<style>
+  body{ margin:0; font-family:'Manrope',-apple-system,sans-serif; }
+  *{ box-sizing:border-box; scrollbar-width:none; -ms-overflow-style:none; }
+  *::-webkit-scrollbar{ width:0; height:0; display:none; }
+</style>
+</helmet>
+
+<div style="position:absolute;left:0px;top:0px;width:1180px;">
+  <div style="font-family:'Manrope';font-weight:800;font-size:27px;color:#201d18;letter-spacing:-0.5px;">Radi coffee — мини-апп лояльности</div>
+  <div style="font-family:'Manrope';font-weight:400;font-size:14px;line-height:1.5;color:#6b675f;margin-top:8px;max-width:720px;">Каждые 6 чашек — одна в подарок. Барист находит гостя по имени и&nbsp;4&nbsp;цифрам, отмечает кофе в один тап — без бумажных карточек. Ниже три варианта главного экрана, карточка гостя и карта клиента в телефоне. Нажмите на гостя в списке — карточка справа обновится.</div>
+</div>
+
+<!-- ============ ВАРИАНТ A ============ -->
+<div style="position:absolute;left:0px;top:140px;width:340px;">
+  <div data-drags-parent="1" style="font-family:'Manrope';font-weight:600;font-size:13px;color:#3a3833;margin-bottom:10px;">Вариант A · Список с поиском</div>
+  <div style="background:#0E0D0B;border-radius:42px;padding:10px;box-shadow:0 24px 60px rgba(0,0,0,0.28);">
+    <div style="background:#1C1A15;border-radius:34px;height:660px;overflow:hidden;display:flex;flex-direction:column;font-family:'Manrope';">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 24px 4px;flex:none;">
+        <span style="color:#ECE7DB;font-size:13px;font-weight:600;">9:41</span>
+        <div style="width:23px;height:11px;border:1px solid rgba(236,231,219,0.5);border-radius:3px;"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 20px 14px;flex:none;">
+        <div style="width:30px;height:30px;border:1.5px solid #C2A079;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:700;font-size:15px;">R</div>
+        <div style="display:flex;flex-direction:column;line-height:1.1;">
+          <span style="color:#ECE7DB;font-size:14px;font-weight:600;">Radi</span>
+          <span style="color:#8C857A;font-size:10px;letter-spacing:1.5px;">COFFEE</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin:0 20px 16px;padding:12px 14px;background:#25231D;border:1px solid rgba(194,160,121,0.18);border-radius:14px;flex:none;">
+        <div style="width:13px;height:13px;border:1.5px solid #8C857A;border-radius:50%;flex:none;"></div>
+        <span style="color:#6E685E;font-size:13px;">Имя или 4 цифры…</span>
+      </div>
+      <div style="flex:1;overflow-y:auto;">
+        <sc-for list="{{ clients }}" as="client" hint-placeholder-count="6">
+          <div onClick="{{ client.open }}" style="display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid rgba(236,231,219,0.05);cursor:pointer;">
+            <div style="width:38px;height:38px;border-radius:50%;background:#25231D;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:600;font-size:15px;flex:none;">{{ client.initial }}</div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="color:#ECE7DB;font-size:14.5px;font-weight:600;">{{ client.name }}</span>
+                <span style="color:#6E685E;font-size:11px;font-family:monospace;">···· {{ client.digits }}</span>
+              </div>
+              <div style="display:flex;gap:3px;">
+                <sc-for list="{{ client.bars }}" as="bar" hint-placeholder-count="6"><div style="{{ bar.style }}"></div></sc-for>
+              </div>
+            </div>
+            <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span style="color:#9A9388;font-size:12px;font-variant-numeric:tabular-nums;">{{ client.pct }}</span>
+              <sc-if value="{{ client.hot }}"><span style="color:#1C1A15;background:#E7DFC9;font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;letter-spacing:0.4px;">ПОДАРОК</span></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ВАРИАНТ B ============ -->
+<div style="position:absolute;left:420px;top:140px;width:340px;">
+  <div data-drags-parent="1" style="font-family:'Manrope';font-weight:600;font-size:13px;color:#3a3833;margin-bottom:10px;">Вариант B · Подарки сверху</div>
+  <div style="background:#0E0D0B;border-radius:42px;padding:10px;box-shadow:0 24px 60px rgba(0,0,0,0.28);">
+    <div style="background:#1C1A15;border-radius:34px;height:660px;overflow:hidden;display:flex;flex-direction:column;font-family:'Manrope';">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 24px 4px;flex:none;">
+        <span style="color:#ECE7DB;font-size:13px;font-weight:600;">9:41</span>
+        <div style="width:23px;height:11px;border:1px solid rgba(236,231,219,0.5);border-radius:3px;"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 20px 14px;flex:none;">
+        <div style="width:30px;height:30px;border:1.5px solid #C2A079;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:700;font-size:15px;">R</div>
+        <div style="display:flex;flex-direction:column;line-height:1.1;">
+          <span style="color:#ECE7DB;font-size:14px;font-weight:600;">Radi</span>
+          <span style="color:#8C857A;font-size:10px;letter-spacing:1.5px;">COFFEE</span>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding-bottom:10px;">
+        <div style="color:#C2A079;font-size:10.5px;font-weight:700;letter-spacing:1.4px;padding:2px 20px 10px;">ГОТОВЫ К ПОДАРКУ</div>
+        <sc-for list="{{ hotClients }}" as="client" hint-placeholder-count="2">
+          <div onClick="{{ client.open }}" style="margin:0 20px 10px;padding:15px 16px;background:linear-gradient(135deg,#2c281f,#23211b);border:1px solid rgba(231,223,201,0.35);border-radius:18px;display:flex;align-items:center;gap:13px;cursor:pointer;">
+            <div style="width:44px;height:44px;border-radius:50%;background:#E7DFC9;display:flex;align-items:center;justify-content:center;color:#1C1A15;font-weight:700;font-size:18px;flex:none;">{{ client.initial }}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="color:#F3EEE2;font-size:15.5px;font-weight:600;">{{ client.name }}</div>
+              <div style="color:#9A9388;font-size:11px;font-family:monospace;margin-top:2px;">···· {{ client.digits }}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none;">
+              <span style="font-size:22px;color:#E7DFC9;line-height:1;">♥</span>
+              <span style="color:#C2A079;font-size:10px;font-weight:700;">6-й бесплатно</span>
+            </div>
+          </div>
+        </sc-for>
+        <div style="display:flex;align-items:center;gap:10px;margin:14px 20px 12px;padding:11px 14px;background:#25231D;border:1px solid rgba(194,160,121,0.16);border-radius:14px;">
+          <div style="width:13px;height:13px;border:1.5px solid #8C857A;border-radius:50%;flex:none;"></div>
+          <span style="color:#6E685E;font-size:13px;">Имя или 4 цифры…</span>
+        </div>
+        <div style="color:#6E685E;font-size:10.5px;font-weight:700;letter-spacing:1.4px;padding:2px 20px 8px;">ОСТАЛЬНЫЕ ГОСТИ</div>
+        <sc-for list="{{ otherClients }}" as="client" hint-placeholder-count="6">
+          <div onClick="{{ client.open }}" style="display:flex;align-items:center;justify-content:space-between;padding:11px 20px;border-bottom:1px solid rgba(236,231,219,0.05);cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:11px;min-width:0;">
+              <div style="width:32px;height:32px;border-radius:50%;background:#25231D;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:600;font-size:14px;flex:none;">{{ client.initial }}</div>
+              <div style="min-width:0;">
+                <div style="color:#ECE7DB;font-size:14px;font-weight:600;">{{ client.name }}</div>
+                <div style="color:#6E685E;font-size:10.5px;font-family:monospace;margin-top:1px;">···· {{ client.digits }}</div>
+              </div>
+            </div>
+            <span style="color:#9A9388;font-size:12.5px;font-variant-numeric:tabular-nums;flex:none;">{{ client.pct }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ВАРИАНТ C ============ -->
+<div style="position:absolute;left:840px;top:140px;width:340px;">
+  <div data-drags-parent="1" style="font-family:'Manrope';font-weight:600;font-size:13px;color:#3a3833;margin-bottom:10px;">Вариант C · Сетка с кольцами</div>
+  <div style="background:#0E0D0B;border-radius:42px;padding:10px;box-shadow:0 24px 60px rgba(0,0,0,0.28);">
+    <div style="background:#1C1A15;border-radius:34px;height:660px;overflow:hidden;display:flex;flex-direction:column;font-family:'Manrope';">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 24px 4px;flex:none;">
+        <span style="color:#ECE7DB;font-size:13px;font-weight:600;">9:41</span>
+        <div style="width:23px;height:11px;border:1px solid rgba(236,231,219,0.5);border-radius:3px;"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 20px 14px;flex:none;">
+        <div style="width:30px;height:30px;border:1.5px solid #C2A079;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:700;font-size:15px;">R</div>
+        <div style="display:flex;flex-direction:column;line-height:1.1;">
+          <span style="color:#ECE7DB;font-size:14px;font-weight:600;">Radi</span>
+          <span style="color:#8C857A;font-size:10px;letter-spacing:1.5px;">COFFEE</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin:0 20px 16px;padding:12px 14px;background:#25231D;border:1px solid rgba(194,160,121,0.18);border-radius:14px;flex:none;">
+        <div style="width:13px;height:13px;border:1.5px solid #8C857A;border-radius:50%;flex:none;"></div>
+        <span style="color:#6E685E;font-size:13px;">Имя или 4 цифры…</span>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:0 18px 18px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <sc-for list="{{ clients }}" as="client" hint-placeholder-count="6">
+            <div onClick="{{ client.open }}" style="background:#25231D;border:1px solid rgba(194,160,121,0.12);border-radius:18px;padding:16px 12px 14px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;">
+              <div style="{{ client.ringStyle }}">
+                <div style="width:42px;height:42px;border-radius:50%;background:#25231D;display:flex;align-items:center;justify-content:center;color:#ECE7DB;font-weight:600;font-size:16px;">{{ client.initial }}</div>
+              </div>
+              <div style="color:#ECE7DB;font-size:13.5px;font-weight:600;text-align:center;">{{ client.name }}</div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                <span style="color:#6E685E;font-size:10px;font-family:monospace;">···· {{ client.digits }}</span>
+                <span style="color:#9A9388;font-size:11px;font-variant-numeric:tabular-nums;">{{ client.pct }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ КАРТОЧКА ГОСТЯ (бариста) ============ -->
+<div style="position:absolute;left:0px;top:910px;width:340px;">
+  <div data-drags-parent="1" style="font-family:'Manrope';font-weight:600;font-size:13px;color:#3a3833;margin-bottom:10px;">Карточка гостя · экран бариста</div>
+  <div style="background:#0E0D0B;border-radius:42px;padding:10px;box-shadow:0 24px 60px rgba(0,0,0,0.28);">
+    <div style="background:#1C1A15;border-radius:34px;height:660px;overflow:hidden;display:flex;flex-direction:column;font-family:'Manrope';">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 24px 4px;flex:none;">
+        <span style="color:#ECE7DB;font-size:13px;font-weight:600;">9:41</span>
+        <div style="width:23px;height:11px;border:1px solid rgba(236,231,219,0.5);border-radius:3px;"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;flex:none;">
+        <div style="width:30px;height:30px;border-radius:50%;border:1px solid rgba(236,231,219,0.18);display:flex;align-items:center;justify-content:center;color:#9A9388;font-size:16px;">‹</div>
+        <span style="color:#8C857A;font-size:13px;font-weight:500;">Карточка гостя</span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:18px 26px 26px;">
+        <div style="width:72px;height:72px;border-radius:50%;background:#25231D;display:flex;align-items:center;justify-content:center;color:#C2A079;font-weight:700;font-size:30px;margin-bottom:16px;">{{ detailInitial }}</div>
+        <div style="color:#F3EEE2;font-size:24px;font-weight:700;letter-spacing:-0.3px;">{{ detailName }}</div>
+        <div style="color:#8C857A;font-size:13px;font-family:monospace;margin-top:5px;">···· {{ detailDigits }}</div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;justify-items:center;margin:30px 0 18px;">
+          <sc-for list="{{ detailSlots }}" as="s" hint-placeholder-count="6"><div style="{{ s.style }}">{{ s.label }}</div></sc-for>
+        </div>
+        <div style="color:#C2A079;font-size:13px;font-weight:600;">{{ detailCycle }}</div>
+
+        <div style="flex:1;"></div>
+
+        <div style="display:flex;align-items:center;justify-content:center;gap:7px;color:#6E685E;font-size:12px;margin-bottom:16px;">
+          <span style="color:#9A9388;font-weight:600;">{{ detailTotal }}</span><span>чашек всего</span>
+        </div>
+
+        <sc-if value="{{ detailBtnHot }}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{ addCup }}" style="width:100%;padding:17px;border-radius:16px;background:#E7DFC9;color:#1C1A15;font-size:16px;font-weight:700;text-align:center;cursor:pointer;box-shadow:0 0 24px rgba(231,223,201,0.3);">Выдать 6-й бесплатно ♥</div>
+        </sc-if>
+        <sc-if value="{{ detailBtnNormal }}">
+          <div onClick="{{ addCup }}" style="width:100%;padding:17px;border-radius:16px;background:#C2A079;color:#1C1A15;font-size:16px;font-weight:700;text-align:center;cursor:pointer;">+1 кофе</div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ КАРТА КЛИЕНТА В ТЕЛЕФОНЕ ============ -->
+<div style="position:absolute;left:420px;top:910px;width:340px;">
+  <div data-drags-parent="1" style="font-family:'Manrope';font-weight:600;font-size:13px;color:#3a3833;margin-bottom:10px;">Карта клиента · в его телефоне</div>
+  <div style="background:#0E0D0B;border-radius:42px;padding:10px;box-shadow:0 24px 60px rgba(0,0,0,0.28);">
+    <div style="background:#1C1A15;border-radius:34px;height:660px;overflow:hidden;display:flex;flex-direction:column;font-family:'Manrope';">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 24px 4px;flex:none;">
+        <span style="color:#ECE7DB;font-size:13px;font-weight:600;">9:41</span>
+        <div style="width:23px;height:11px;border:1px solid rgba(236,231,219,0.5);border-radius:3px;"></div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px 22px;">
+        <div style="color:#8C857A;font-size:12px;font-weight:500;text-align:center;margin-bottom:16px;">Ваша карта лояльности</div>
+        <div style="background:#1C1A15;border:1px solid rgba(194,160,121,0.42);border-radius:22px;padding:26px 22px;box-shadow:0 16px 40px rgba(0,0,0,0.35);">
+          <div style="color:#D8D2C2;font-size:18px;font-weight:600;text-align:center;margin-bottom:22px;">6-й кофе в подарок <span style="color:#E7DFC9;">♥</span></div>
+          <div style="display:flex;gap:18px;align-items:center;">
+            <div style="width:88px;height:88px;border:1px solid rgba(194,160,121,0.5);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:none;">
+              <span style="color:#C2A079;font-weight:700;font-size:17px;border:1.5px solid #C2A079;border-radius:7px;padding:3px 6px;">R</span>
+              <span style="color:#D8D2C2;font-size:9px;letter-spacing:1px;margin-top:4px;">Radi</span>
+              <span style="color:#8C857A;font-size:8px;letter-spacing:1.5px;">COFFEE</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:11px;flex:1;justify-items:center;">
+              <sc-for list="{{ walletSlots }}" as="s" hint-placeholder-count="6"><div style="{{ s.style }}">{{ s.label }}</div></sc-for>
+            </div>
+          </div>
+          <div style="color:#8C857A;font-size:11px;text-align:center;margin-top:22px;letter-spacing:0.3px;">ул. Болотниковская, 36к5</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:20px;color:#6E685E;font-size:12.5px;">
+          <span>До подарка осталось</span><span style="color:#C2A079;font-weight:700;">3 чашки</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { detail: { name: 'Алексей', digits: '4827', count: 5, total: 23 } };
+
+  baseClients() {
+    return [
+      { name: 'Алексей',    digits: '4827', count: 5, total: 23 },
+      { name: 'Ольга',      digits: '8801', count: 5, total: 11 },
+      { name: 'Дмитрий',    digits: '7634', count: 4, total: 16 },
+      { name: 'Мария',      digits: '1290', count: 2, total: 8 },
+      { name: 'Сергей',     digits: '3345', count: 3, total: 9 },
+      { name: 'Иван',       digits: '2156', count: 1, total: 7 },
+      { name: 'Анна',       digits: '0518', count: 0, total: 6 },
+      { name: 'Екатерина',  digits: '9072', count: 4, total: 28 },
+    ];
+  }
+
+  buildBars(count) {
+    const bars = [];
+    for (let i = 0; i < 5; i++) {
+      bars.push({ key: 'b' + i, style: {
+        flex: '1', height: '4px', borderRadius: '2px',
+        background: i < count ? '#C2A079' : 'rgba(218,213,198,0.14)',
+      }});
+    }
+    const hot = count >= 5;
+    bars.push({ key: 'g', style: {
+      flex: '1', height: '4px', borderRadius: '2px',
+      background: hot ? '#E7DFC9' : 'rgba(218,213,198,0.14)',
+      boxShadow: hot ? '0 0 6px rgba(231,223,201,0.7)' : 'none',
+    }});
+    return bars;
+  }
+
+  buildSlots(count) {
+    const base = {
+      width: '48px', height: '48px', borderRadius: '50%',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: '19px', fontWeight: '500',
+    };
+    const slots = [];
+    for (let i = 0; i < 5; i++) {
+      const filled = i < count;
+      slots.push({ key: 's' + i, label: '', style: {
+        ...base,
+        background: filled ? '#DAD5C6' : 'transparent',
+        border: filled ? 'none' : '1.5px solid rgba(218,213,198,0.22)',
+      }});
+    }
+    const active = count >= 5;
+    slots.push({ key: 'g', label: '♥', style: {
+      ...base,
+      color: active ? '#1C1A15' : 'rgba(218,213,198,0.4)',
+      background: active ? '#E7DFC9' : 'transparent',
+      border: active ? 'none' : '1.5px dashed rgba(218,213,198,0.3)',
+      boxShadow: active ? '0 0 16px rgba(231,223,201,0.45)' : 'none',
+    }});
+    return slots;
+  }
+
+  setDetail(c) {
+    this.setState({ detail: { name: c.name, digits: c.digits, count: c.count, total: c.total } });
+  }
+
+  addCup() {
+    this.setState(s => {
+      const d = { ...s.detail };
+      if (d.count >= 5) { d.count = 0; d.total += 1; }
+      else { d.count += 1; d.total += 1; }
+      return { detail: d };
+    });
+  }
+
+  renderVals() {
+    const clients = this.baseClients().map(c => {
+      const deg = Math.round((c.count / 6) * 360);
+      return {
+        ...c,
+        initial: c.name[0],
+        hot: c.count >= 5,
+        pct: c.count + '/6',
+        bars: this.buildBars(c.count),
+        ringStyle: {
+          width: '56px', height: '56px', borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: `conic-gradient(#C2A079 ${deg}deg, rgba(218,213,198,0.12) ${deg}deg)`,
+        },
+        open: () => this.setDetail(c),
+      };
+    });
+
+    const d = this.state.detail;
+    const hot = d.count >= 5;
+
+    return {
+      clients,
+      hotClients: clients.filter(c => c.hot),
+      otherClients: clients.filter(c => !c.hot),
+      detailName: d.name,
+      detailInitial: d.name[0],
+      detailDigits: d.digits,
+      detailTotal: d.total,
+      detailSlots: this.buildSlots(d.count),
+      detailCycle: hot ? 'Шестой кофе — в подарок' : `${d.count} из 5 до подарка`,
+      detailBtnHot: hot,
+      detailBtnNormal: !hot,
+      addCup: () => this.addCup(),
+      walletSlots: this.buildSlots(3),
+    };
+  }
+}
+</script>
+</body>
+</html>

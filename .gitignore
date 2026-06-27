@@ -1,0 +1,42 @@
+# --- secrets ---
+.env
+*.env
+!.env.example
+
+# --- python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# --- data / runtime ---
+backend/data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite3
+*.log
+
+# --- node / frontend ---
+node_modules/
+frontend/dist/
+dist/
+.vite/
+
+# --- os / editors ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# --- design source: оставляем только папку handoff, чистим дубли в корне ---
+/.thumbnail
+/Radi coffee - лояльность.dc.html
+/Radi coffee - приложение.dc.html
+/support.js
+design_handoff_radi_coffee/support.js
+# (design_handoff_radi_coffee/*.dc.html и README.md оставляем как референс)
