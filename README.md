@@ -1,48 +1,54 @@
-# ☕ Telegram Coffee Loyalty — Radi Coffee
+# ☕ Telegram Coffee Loyalty
 
-Программа лояльности для кофейни в формате **Telegram Mini App**: «каждый 6-й кофе бесплатно».
-Заменяет бумажные карточки-штампы — бариста находит гостя по имени/номеру или скану QR и
-отмечает кофе в один тап. Работает в проде для реальной кофейни.
+A coffee‑shop loyalty program built as a **Telegram Mini App**: *every 6th coffee is free*.
+It replaces paper stamp cards — a barista finds a guest by name / phone (or QR scan) and marks
+a coffee in one tap. Running in production for a real café.
 
-![CI](https://github.com/milevskiyrv/telegram-coffee-loyalty/actions/workflows/ci.yml/badge.svg)
+[![CI](https://github.com/milevskiyrvai/telegram-coffee-loyalty/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/milevskiyrvai/telegram-coffee-loyalty/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> Одно приложение — три роли, экран определяется ролью аккаунта:
-> **Клиент** (карта лояльности + QR) · **Бариста** (поиск гостей, отметка кофе) · **Владелец** (статистика, управление баристами).
+> One app, three roles — the screen is chosen by the account's role:
+> **Client** (loyalty card + QR) · **Barista** (find guests, mark coffee) · **Owner** (stats, manage baristas).
+>
+> The UI is in Russian — it's built for a real Russian‑speaking café.
 
 ---
 
-## 📱 Скриншоты
+## 📱 Screenshots
 
-| Онбординг | Карта клиента | Список гостей (бариста) |
+| Onboarding | Client card | Guests (barista) |
 |:---:|:---:|:---:|
 | ![onboarding](docs/screenshots/onboarding.png) | ![client](docs/screenshots/client-card.png) | ![barista](docs/screenshots/barista-list.png) |
 
-| Карточка гостя | Статистика (владелец) | Баристы |
+| Guest card | Owner stats | Baristas |
 |:---:|:---:|:---:|
 | ![guest](docs/screenshots/guest-card.png) | ![stats](docs/screenshots/owner-stats.png) | ![baristas](docs/screenshots/owner-baristas.png) |
 
----
-
-## ✨ Возможности
-
-- **Telegram Mini App** с серверной авторизацией через **initData (HMAC-SHA256)** — не доверяем клиенту, проверяем подпись на бэкенде.
-- **Три роли** в одном приложении, маршрутизация по роли аккаунта.
-- **Логика лояльности** с накоплением и откатом:
-  - `+1 кофе`, `выдать 6-й бесплатно`, `пропустить выдачу` (отложить бесплатный в запас, до 5), `выдать из запаса`;
-  - каждое действие — через подтверждение, последнее можно **откатить** (журнал действий).
-- **Настоящий сканируемый QR** в фирменном стиле (кодирует id аккаунта); скан у баристы — через нативный сканер Telegram.
-- **Статистика владельца**: чашек за сегодня, гостей в базе, выдано подарков, рейтинг возвращаемости.
-- **Управление баристами**: назначение/увольнение по поиску.
-- Номер телефона берётся из Telegram (`request_contact`), вручную не вводится.
+*(phone numbers are demo seed data, blurred in screenshots)*
 
 ---
 
-## 🧱 Стек
+## ✨ Features
 
-**Frontend** — React 18 + Vite, без UI-фреймворка (вёрстка пиксель-в-пиксель по дизайну), `qrcode` для QR.
-**Backend** — Python, FastAPI, SQLite (легковесно, без отдельной СУБД).
-**Bot** — aiogram 3 (polling), открывает мини-апп через menu-button.
-**Деплой** — systemd + nginx + Let's Encrypt.
+- **Telegram Mini App** with server‑side auth via **initData (HMAC‑SHA256)** — the client is never
+  trusted; the signature is verified on the backend against the bot token.
+- **Three roles** in a single app, routed by the account's role.
+- **Loyalty logic** with carry‑over and undo:
+  - `+1 coffee`, `redeem 6th free`, `skip` (defer the free coffee into a reserve, up to 5), `use reserve`;
+  - every action goes through a confirmation; the last one can be **undone** (action journal).
+- **Real scannable QR** in the brand style (encodes the account id); the barista scans via Telegram's native scanner.
+- **Owner dashboard**: cups today, guests in base, gifts given, returning‑guests leaderboard.
+- **Barista management**: assign / dismiss by search.
+- Phone number comes from Telegram (`request_contact`) — never typed by hand.
+
+---
+
+## 🧱 Stack
+
+- **Frontend** — React 18 + Vite, no UI framework (pixel‑perfect to the design), `qrcode` for QR generation.
+- **Backend** — Python, FastAPI, SQLite (lightweight, no separate DBMS).
+- **Bot** — aiogram 3 (polling), opens the Mini App via the chat menu button.
+- **Deploy** — systemd + nginx + Let's Encrypt.
 
 ```
 Telegram ──┬─ Mini App (React) ──→ FastAPI ──→ SQLite
@@ -52,84 +58,89 @@ Telegram ──┬─ Mini App (React) ──→ FastAPI ──→ SQLite
 
 ---
 
-## 🗂 Структура
+## 🗂 Project layout
 
 ```
 backend/
   app/
-    main.py      # FastAPI: роуты + зависимости авторизации
-    auth.py      # проверка Telegram initData (HMAC), нормализация телефона/имени
-    service.py   # доменная логика лояльности (атомарно, с журналом действий)
-    db.py        # SQLite-слой (WAL, транзакции)
-    config.py    # конфиг из окружения
-  bot.py         # Telegram-бот (aiogram)
-  seed.py        # демо-наполнение для локальной разработки
+    main.py      # FastAPI: routes + auth dependencies
+    auth.py      # Telegram initData verification (HMAC), phone/name normalization
+    service.py   # loyalty domain logic (atomic, with an action journal)
+    db.py        # SQLite layer (WAL, transactions)
+    config.py    # config from environment
+  bot.py         # Telegram bot (aiogram)
+  seed.py        # demo data for local development
 frontend/
   src/
-    App.jsx      # авторизация, онбординг-гейт, роутинг по роли
-    api.js       # API-клиент (Authorization: tma <initData>)
-    tg.js        # обёртка Telegram WebApp SDK
+    App.jsx      # auth, onboarding gate, role routing
+    api.js       # API client (Authorization: tma <initData>)
+    tg.js        # Telegram WebApp SDK wrapper
     screens/     # Onboarding, ClientCard, Barista, Owner, GuestList, GuestCard
-    Qr.jsx       # генерация фирменного QR
+    Qr.jsx       # branded QR generation
 .github/workflows/ci.yml   # CI: ruff (backend) + eslint & build (frontend)
 ```
 
 ---
 
-## 🚀 Локальный запуск
+## 🚀 Local development
 
 ### Backend
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env          # подставьте BOT_TOKEN, OWNER_TG_IDS
-python seed.py                # демо-данные (20 гостей)
-RADI_DEV_AUTH=1 uvicorn app.main:app --port 8011    # DEV_AUTH=1 — вход без проверки подписи (только локально!)
+cp .env.example .env          # set BOT_TOKEN, OWNER_TG_IDS
+python seed.py                # demo data (20 guests)
+RADI_DEV_AUTH=1 uvicorn app.main:app --port 8011    # DEV_AUTH=1 skips signature check — LOCAL ONLY
 ```
 
 ### Frontend
 ```bash
 cd frontend
 npm install
-npm run dev                   # http://localhost:5183, /api проксируется на :8011
+npm run dev                   # http://localhost:5183, /api proxied to :8011
 ```
 
-### Бот
+### Bot
 ```bash
 cd backend
-python bot.py                 # нужен валидный BOT_TOKEN
+python bot.py                 # needs a valid BOT_TOKEN
 ```
 
 ---
 
-## 🔐 Авторизация
+## 🔐 Authentication
 
-Клиент шлёт `Authorization: tma <initData>`. Бэкенд:
-1. разбирает `initData`, считает HMAC-SHA256 по секрету `HMAC("WebAppData", bot_token)`;
-2. сверяет с `hash`, проверяет срок `auth_date`;
-3. по `user.id` находит/создаёт аккаунт и применяет роль владельца из `OWNER_TG_IDS`.
+The client sends `Authorization: tma <initData>`. The backend:
+1. parses `initData`, computes HMAC‑SHA256 with the secret `HMAC("WebAppData", bot_token)`;
+2. compares it to `hash` and checks the `auth_date` freshness;
+3. resolves/creates the account by `user.id` and applies the owner role from `OWNER_TG_IDS`.
 
-В DEV-режиме (`RADI_DEV_AUTH=1`) подпись не проверяется — **только для локальной разработки**.
+In dev mode (`RADI_DEV_AUTH=1`) the signature is **not** verified — for local development only.
 
 ---
 
-## 📦 API (кратко)
+## 📦 API (brief)
 
-| Метод | Путь | Кто | Назначение |
+| Method | Path | Who | Purpose |
 |---|---|---|---|
-| POST | `/api/auth` | все | профиль текущего пользователя (создаёт при первом входе) |
-| POST | `/api/me/profile` | все | сохранить имя/телефон (онбординг) |
-| GET | `/api/accounts?query=` | staff | поиск гостей |
+| POST | `/api/auth` | any | current user profile (created on first open) |
+| POST | `/api/me/profile` | any | save name / phone (onboarding) |
+| GET | `/api/accounts?query=` | staff | search guests |
 | POST | `/api/accounts/:id/action` | staff | `cup` / `redeem` / `skip` / `bonus` |
-| POST | `/api/accounts/:id/undo` | staff | откат последнего действия |
-| POST | `/api/accounts/:id/role` | owner | назначить/снять баристу |
-| GET | `/api/stats/today` · `/api/stats/loyalty` | owner | статистика |
+| POST | `/api/accounts/:id/undo` | staff | undo the last action |
+| POST | `/api/accounts/:id/role` | owner | assign / remove barista |
+| GET | `/api/stats/today` · `/api/stats/loyalty` | owner | statistics |
 
 ---
 
-## 📄 Лицензия
+## 🛠 Roadmap / tech debt
 
-MIT — см. [LICENSE](LICENSE).
+See [TODO.md](TODO.md) — e.g. the undo is currently unbounded (can walk the whole history back);
+the desired limit is to be agreed with the café owner.
 
-> Дизайн реализован по согласованному макету. Подпись «Разработано студией consoleai.ru».
+---
+
+## 📄 License
+
+[MIT](LICENSE) — free to use, modify and distribute.
