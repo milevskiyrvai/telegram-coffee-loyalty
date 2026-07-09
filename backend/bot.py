@@ -17,10 +17,8 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.filters import CommandStart
 from aiogram.types import (
-    KeyboardButton,
     MenuButtonWebApp,
     Message,
-    ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
     WebAppInfo,
 )
@@ -49,14 +47,6 @@ def build_bot() -> Bot:
     )
 
 
-def _contact_kb() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="📱 Поделиться номером", request_contact=True)]],
-        resize_keyboard=True,
-        one_time_keyboard=True,
-    )
-
-
 async def main():
     if not BOT_TOKEN:
         raise SystemExit("BOT_TOKEN не задан")
@@ -69,34 +59,24 @@ async def main():
 
     @dp.message(CommandStart())
     async def start(m: Message):
-        # привязываем аккаунт по tg_id (создаём при первом входе)
+        # привязываем аккаунт по tg_id (создаём при первом входе).
+        # Номер НЕ просим здесь — его запросит сам мини-апп при первом входе (кнопкой «Карта»).
         fallback = (m.from_user.first_name or "").strip()
-        acc = service.get_or_create_by_tg(m.from_user.id, fallback)
-        # если телефона ещё нет — просим поделиться (надёжный способ получить номер)
-        if not acc.get("phone"):
-            await m.answer(WELCOME, reply_markup=_contact_kb())
-        else:
-            # снимаем любую залипшую reply-клавиатуру; открытие — через меню-кнопку «Карта»
-            await m.answer(WELCOME, reply_markup=ReplyKeyboardRemove())
+        service.get_or_create_by_tg(m.from_user.id, fallback)
+        await m.answer(WELCOME, reply_markup=ReplyKeyboardRemove())
 
     @dp.message(F.contact)
     async def got_contact(m: Message):
-        # пользователь поделился контактом — сохраняем номер в его аккаунт
+        # НЕВИДИМЫЙ обработчик: когда мини-апп вызывает requestContact(), номер прилетает СЮДА.
+        # Молча сохраняем его — мини-апп подхватит через /api/me.
         c = m.contact
-        # принимаем только СВОЙ контакт (не пересланный чужой)
         if c.user_id and c.user_id != m.from_user.id:
-            await m.answer("Пожалуйста, поделитесь своим номером.", reply_markup=_contact_kb())
-            return
+            return  # чужой пересланный контакт — игнор
         phone = normalize_phone(c.phone_number or "")
         acc = service.get_or_create_by_tg(m.from_user.id, (m.from_user.first_name or "").strip())
         if phone:
-            # сохраняем ТОЛЬКО телефон; имя юзер выберет в мини-аппе (onboarded не трогаем)
-            service.set_phone(acc["id"], phone)
-        # убираем reply-клавиатуру «поделиться номером»; открытие — через меню-кнопку «Карта»
-        await m.answer(
-            "Готово, номер сохранён ✅\nОткройте карту кнопкой <b>«Карта»</b> слева от поля ввода 👈",
-            reply_markup=ReplyKeyboardRemove(),
-        )
+            service.set_phone(acc["id"], phone)  # только телефон, onboarded не трогаем
+        # без сообщений — юзер в этот момент в мини-аппе, лишний текст в чате не нужен
 
     @dp.message(F.text == "/app")
     async def app_cmd(m: Message):

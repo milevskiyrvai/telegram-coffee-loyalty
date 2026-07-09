@@ -2,23 +2,52 @@
 import { useState } from 'react';
 import { displayPhone } from '../ui.js';
 import { requestContact, haptic } from '../tg.js';
+import { api } from '../api.js';
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export default function Onboarding({ phone, onFinish }) {
-  // Если номер уже есть (поделился боту) — сразу шаг имени, не спрашиваем номер повторно.
+  // Если номер уже есть — сразу шаг имени. Иначе просим поделиться (работает и на Android, и на iPhone).
   const [step, setStep] = useState(phone ? 'name' : 'phone'); // 'phone' | 'name'
   const [name, setName] = useState('');
   const [sharedPhone, setSharedPhone] = useState(phone || '');
   const [busy, setBusy] = useState(false);
+  const [waiting, setWaiting] = useState(false); // ждём номер после «поделиться»
 
   const canFinish = name.trim().length > 0;
 
   async function share() {
+    if (waiting) return;
     haptic('light');
-    // Запрашиваем контакт. Если клиент вернул номер — запоминаем и отправим на бэк.
-    // Номер также прилетает боту (message.contact) и подхватывается там как фолбэк.
-    const res = await requestContact();
-    if (typeof res === 'string') setSharedPhone(res);
-    setStep('name');
+    setWaiting(true);
+    try {
+      // 1) нативный запрос контакта. Telegram отдаёт номер БОТУ (message.contact);
+      //    часть клиентов возвращает его и в апп — тогда возьмём сразу.
+      const res = await requestContact();
+      if (typeof res === 'string' && res) {
+        setSharedPhone(res);
+        setStep('name');
+        return;
+      }
+      if (res === null) {
+        // отказался или API недоступен — остаёмся на шаге номера
+        return;
+      }
+      // 2) res === true: юзер поделился, но номер пришёл боту, не в апп.
+      //    Опрашиваем сервер, пока бот сохранит номер (одинаково на всех платформах).
+      for (let i = 0; i < 12; i++) {
+        await sleep(700);
+        try {
+          const r = await api.me();
+          if (r?.me?.phone) { setSharedPhone(r.me.phone); setStep('name'); return; }
+        } catch (e) { /* сеть моргнула — пробуем ещё */ }
+      }
+      // номер за ~8с так и не сохранился — всё равно пускаем к имени,
+      // номер подтянется позже (бот сохранит, App перечитает при возврате фокуса).
+      setStep('name');
+    } finally {
+      setWaiting(false);
+    }
   }
 
   function changeName(v) {
@@ -47,11 +76,11 @@ export default function Onboarding({ phone, onFinish }) {
             Копите кофе и получайте каждый<br />6-й в подарок. Для начала поделитесь<br />номером телефона.
           </div>
           <div style={{ flex: 1, maxHeight: 60 }} />
-          <div onClick={share} style={{ width: '100%', padding: 17, borderRadius: 16, background: '#C2A079', color: '#1C1A15', fontSize: 16, fontWeight: 700, textAlign: 'center', cursor: 'pointer' }}>
-            Поделиться номером
+          <div onClick={share} style={{ width: '100%', padding: 17, borderRadius: 16, background: '#C2A079', color: '#1C1A15', fontSize: 16, fontWeight: 700, textAlign: 'center', cursor: waiting ? 'default' : 'pointer', opacity: waiting ? 0.7 : 1 }}>
+            {waiting ? 'Подтверждаем…' : 'Поделиться номером'}
           </div>
           <div style={{ color: '#5A554C', fontSize: 11, marginTop: 14, textAlign: 'center', lineHeight: 1.5 }}>
-            Номер берётся из Telegram / MAX —<br />вводить вручную не нужно
+            Номер берётся из Telegram —<br />вводить вручную не нужно
           </div>
         </>
       )}
