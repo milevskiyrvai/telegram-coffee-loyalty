@@ -48,6 +48,18 @@ export function getInitData() {
   return '';
 }
 
+// Диагностика для экрана ошибки — по ней видно, ПОЧЕМУ не вошёл конкретный клиент.
+export function tgDiag() {
+  const tg = tgApp();
+  return {
+    hasTg: !!tg,
+    initLen: tg && tg.initData ? tg.initData.length : 0,
+    platform: tg?.platform || 'n/a',
+    version: tg?.version || 'n/a',
+    hasUnsafeUser: !!tg?.initDataUnsafe?.user,
+  };
+}
+
 // Есть ли валидная initData (открыто корректно как Telegram Mini App)
 export function hasInitData() {
   const tg = tgApp();

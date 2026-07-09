@@ -1,7 +1,7 @@
 // Корень приложения: авторизация по initData, онбординг-гейт, роутинг по роли.
 import { useEffect, useState } from 'react';
 import { api } from './api.js';
-import { initTelegram, isTelegram, hasInitData, waitForInitData } from './tg.js';
+import { initTelegram, isTelegram, hasInitData, waitForInitData, tgDiag } from './tg.js';
 import { Spinner } from './components.jsx';
 import Onboarding from './screens/Onboarding.jsx';
 import ClientCard from './screens/ClientCard.jsx';
@@ -26,13 +26,27 @@ export default function App() {
     initTelegram();
     (async () => {
       try {
-        // ВАЖНО для Android: SDK/initData могут прийти с задержкой — ждём до auth,
-        // иначе initData пустой → 401 bad signature.
-        await waitForInitData(4000);
-        initTelegram(); // повторно на случай, если SDK появился только сейчас
-        const [a, c] = await Promise.all([api.auth(), api.config().catch(() => cfg)]);
-        setMe(a.me);
+        // Android: SDK/initData могут прийти с задержкой — ждём дольше, затем ретраим auth.
+        await waitForInitData(8000);
+        initTelegram();
+        const c = await api.config().catch(() => cfg);
         if (c) setCfg(c);
+
+        // до 4 попыток auth: между ними ждём initData (вдруг клиент заполнит позже)
+        let lastErr = null;
+        for (let attempt = 0; attempt < 4; attempt++) {
+          try {
+            const a = await api.auth();
+            setMe(a.me);
+            lastErr = null;
+            break;
+          } catch (e) {
+            lastErr = e;
+            await waitForInitData(2500);
+            initTelegram();
+          }
+        }
+        if (lastErr) throw lastErr;
       } catch (e) {
         setError(e.message || 'Ошибка входа');
       } finally {
@@ -71,10 +85,18 @@ export default function App() {
             {!isTelegram()
               ? 'Откройте приложение через бота @radicoffee_bot в Telegram.'
               : !hasInitData()
-                ? 'Закройте это окно и откройте карту заново кнопкой «Открыть карту» в боте @radicoffee_bot (через меню «···» приложение открывать нельзя).'
+                ? 'Закройте это окно и откройте карту заново кнопкой «Карта» в боте @radicoffee_bot (через меню «···» приложение открывать нельзя).'
                 : 'Не удалось войти. Попробуйте переоткрыть приложение.'}
             <br /><span style={{ color: '#5A554C', fontSize: 12 }}>{error}</span>
           </div>
+          <div onClick={() => location.reload()} style={{ marginTop: 8, padding: '11px 22px', borderRadius: 13, background: '#C2A079', color: '#1C1A15', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+            Повторить
+          </div>
+          {(() => { const d = tgDiag(); return (
+            <div style={{ marginTop: 14, color: '#4A463E', fontSize: 10.5, fontFamily: 'monospace' }}>
+              tg:{d.hasTg ? '1' : '0'} · init:{d.initLen} · {d.platform} · v{d.version} · u:{d.hasUnsafeUser ? '1' : '0'}
+            </div>
+          ); })()}
         </div>
       </div>
     );
