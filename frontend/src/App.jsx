@@ -1,7 +1,7 @@
 // Корень приложения: авторизация по initData, онбординг-гейт, роутинг по роли.
 import { useEffect, useState } from 'react';
 import { api } from './api.js';
-import { initTelegram, isTelegram, hasInitData } from './tg.js';
+import { initTelegram, isTelegram, hasInitData, waitForInitData } from './tg.js';
 import { Spinner } from './components.jsx';
 import Onboarding from './screens/Onboarding.jsx';
 import ClientCard from './screens/ClientCard.jsx';
@@ -26,6 +26,10 @@ export default function App() {
     initTelegram();
     (async () => {
       try {
+        // ВАЖНО для Android: SDK/initData могут прийти с задержкой — ждём до auth,
+        // иначе initData пустой → 401 bad signature.
+        await waitForInitData(4000);
+        initTelegram(); // повторно на случай, если SDK появился только сейчас
         const [a, c] = await Promise.all([api.auth(), api.config().catch(() => cfg)]);
         setMe(a.me);
         if (c) setCfg(c);
@@ -64,7 +68,7 @@ export default function App() {
           <div style={{ width: 60, height: 60, border: '1.5px solid #C2A079', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C2A079', fontWeight: 700, fontSize: 28 }}>R</div>
           <div style={{ color: '#F3EEE2', fontSize: 18, fontWeight: 700 }}>Radi coffee</div>
           <div style={{ color: '#8C857A', fontSize: 13.5, lineHeight: 1.5 }}>
-            {!isTelegram
+            {!isTelegram()
               ? 'Откройте приложение через бота @radicoffee_bot в Telegram.'
               : !hasInitData()
                 ? 'Закройте это окно и откройте карту заново кнопкой «Открыть карту» в боте @radicoffee_bot (через меню «···» приложение открывать нельзя).'

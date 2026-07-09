@@ -1,41 +1,66 @@
-// Обёртка над Telegram WebApp SDK. В браузере (dev) даёт мок.
-const tg = window.Telegram?.WebApp;
+// Обёртка над Telegram WebApp SDK.
+// ВАЖНО: НЕ кэшируем window.Telegram в константу при импорте — на медленном Android WebView
+// SDK (telegram-web-app.js) может быть ещё не готов к моменту загрузки нашего бандла.
+// Берём объект динамически каждый раз.
+function tgApp() {
+  return (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) || null;
+}
+
+// DEV-мок включается ТОЛЬКО при сборке с VITE_DEV_MOCK=1 — в прод-бандл не попадает.
+const DEV_MOCK = import.meta.env.VITE_DEV_MOCK === '1';
 
 export function initTelegram() {
+  const tg = tgApp();
   if (tg) {
     try {
       tg.ready();
       tg.expand();
-      // тёмная тема приложения
       if (tg.setHeaderColor) tg.setHeaderColor('#1C1A15');
       if (tg.setBackgroundColor) tg.setBackgroundColor('#1C1A15');
     } catch (e) {}
   }
 }
 
+// Дождаться готовности SDK и непустой initData (Android иногда отдаёт их с задержкой).
+export function waitForInitData(timeoutMs = 4000) {
+  return new Promise((resolve) => {
+    const t0 = Date.now();
+    const tick = () => {
+      const tg = tgApp();
+      if (tg && tg.initData) { resolve(tg.initData); return; }
+      if (Date.now() - t0 >= timeoutMs) { resolve(tg ? (tg.initData || '') : ''); return; }
+      setTimeout(tick, 120);
+    };
+    tick();
+  });
+}
+
 // initData для авторизации на бэке.
 export function getInitData() {
-  // Внутри Telegram — всегда отдаём настоящую initData (даже если пустую:
-  // тогда бэк честно ответит 401, а UI покажет «откройте через бота», без dev-подмены).
+  const tg = tgApp();
   if (tg) return tg.initData || '';
-  // DEV-режим (запуск в обычном браузере, без Telegram) — мок. Работает только если
-  // бэкенд поднят с RADI_DEV_AUTH=1 (в проде это выключено, мок отвергается).
-  const devId = localStorage.getItem('radi_dev_id') || '777000777';
-  const user = encodeURIComponent(JSON.stringify({ id: Number(devId), first_name: 'Дев', last_name: '' }));
-  return `user=${user}&auth_date=${Math.floor(Date.now() / 1000)}&hash=dev`;
+  // DEV-мок только в спец-сборке (VITE_DEV_MOCK=1), иначе — пусто (бэк ответит 401).
+  if (DEV_MOCK) {
+    const devId = localStorage.getItem('radi_dev_id') || '777000777';
+    const user = encodeURIComponent(JSON.stringify({ id: Number(devId), first_name: 'Дев', last_name: '' }));
+    return `user=${user}&auth_date=${Math.floor(Date.now() / 1000)}&hash=dev`;
+  }
+  return '';
 }
 
 // Есть ли валидная initData (открыто корректно как Telegram Mini App)
 export function hasInitData() {
+  const tg = tgApp();
   return !!(tg && tg.initData);
 }
 
 export function getUnsafeUser() {
-  return tg?.initDataUnsafe?.user || null;
+  return tgApp()?.initDataUnsafe?.user || null;
 }
 
 // Открыть внешнюю ссылку. В Telegram — нативно (openLink), иначе — обычный переход.
 export function openLink(url) {
+  const tg = tgApp();
   try {
     if (tg && tg.openLink) { tg.openLink(url); return; }
   } catch (e) {}
@@ -44,7 +69,7 @@ export function openLink(url) {
 
 export function haptic(kind = 'light') {
   try {
-    const h = tg?.HapticFeedback;
+    const h = tgApp()?.HapticFeedback;
     if (!h) return;
     if (kind === 'success' || kind === 'error' || kind === 'warning') h.notificationOccurred(kind);
     else h.impactOccurred(kind);
@@ -55,6 +80,7 @@ export function haptic(kind = 'light') {
 export function requestContact() {
   // Возвращает строку с номером телефона, либо true (поделился, но номер в ответе не пришёл),
   // либо null (отказался / нет API).
+  const tg = tgApp();
   return new Promise((resolve) => {
     if (!tg || !tg.requestContact) { resolve(null); return; }
     try {
@@ -83,6 +109,7 @@ export function requestContact() {
 
 // Нативный сканер QR Telegram. Возвращает текст QR или null.
 export function scanQr() {
+  const tg = tgApp();
   return new Promise((resolve) => {
     if (!tg || !tg.showScanQrPopup) { resolve(null); return; }
     let done = false;
@@ -99,7 +126,11 @@ export function scanQr() {
 }
 
 export function hasNativeScanner() {
+  const tg = tgApp();
   return !!(tg && tg.showScanQrPopup);
 }
 
-export const isTelegram = !!tg;
+// Функция, а не константа — SDK может появиться позже загрузки модуля (Android).
+export function isTelegram() {
+  return !!tgApp();
+}
