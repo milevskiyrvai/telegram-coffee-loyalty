@@ -26,15 +26,15 @@ export default function App() {
     initTelegram();
     (async () => {
       try {
-        // Android: SDK/initData могут прийти с задержкой — ждём дольше, затем ретраим auth.
-        await waitForInitData(8000);
+        // Android: initData может прийти с задержкой — ждём, затем ретраим auth.
+        await waitForInitData(5000);
         initTelegram();
         const c = await api.config().catch(() => cfg);
         if (c) setCfg(c);
 
-        // до 4 попыток auth: между ними ждём initData (вдруг клиент заполнит позже)
+        // до 3 попыток auth. Но если initData так и пуст — не долбим впустую, показываем совет.
         let lastErr = null;
-        for (let attempt = 0; attempt < 4; attempt++) {
+        for (let attempt = 0; attempt < 3; attempt++) {
           try {
             const a = await api.auth();
             setMe(a.me);
@@ -42,7 +42,8 @@ export default function App() {
             break;
           } catch (e) {
             lastErr = e;
-            await waitForInitData(2500);
+            if (!hasInitData()) break; // initData пустой — ретраи не помогут, выходим к экрану-совету
+            await waitForInitData(2000);
             initTelegram();
           }
         }
@@ -85,7 +86,7 @@ export default function App() {
             {!isTelegram()
               ? 'Откройте приложение через бота @radicoffee_bot в Telegram.'
               : !hasInitData()
-                ? 'Закройте это окно и откройте карту заново кнопкой «Карта» в боте @radicoffee_bot (через меню «···» приложение открывать нельзя).'
+                ? 'Ваш Telegram не передал данные входа. Обновите в Play Market приложения «Telegram», «Android System WebView» и «Chrome», затем откройте карту заново. Если не помогло — попробуйте с другого телефона.'
                 : 'Не удалось войти. Попробуйте переоткрыть приложение.'}
             <br /><span style={{ color: '#5A554C', fontSize: 12 }}>{error}</span>
           </div>
