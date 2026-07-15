@@ -4,7 +4,8 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default [
-  { ignores: ['dist', 'node_modules'] },
+  // public/tg-sdk.js — вендорный SDK Telegram, не наш код, не линтим
+  { ignores: ['dist', 'node_modules', 'public/tg-sdk.js'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {

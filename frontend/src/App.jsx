@@ -1,7 +1,7 @@
 // Корень приложения: авторизация по initData, онбординг-гейт, роутинг по роли.
 import { useEffect, useState } from 'react';
 import { api } from './api.js';
-import { initTelegram, isTelegram, hasInitData, waitForInitData, tgDiag } from './tg.js';
+import { initTelegram, waitForInitData, tgDiag } from './tg.js';
 import { Spinner } from './components.jsx';
 import Onboarding from './screens/Onboarding.jsx';
 import ClientCard from './screens/ClientCard.jsx';
@@ -26,15 +26,15 @@ export default function App() {
     initTelegram();
     (async () => {
       try {
-        // Android: initData может прийти с задержкой — ждём, затем ретраим auth.
-        await waitForInitData(5000);
+        // initData может появиться с заметной задержкой (Telegram прогревает WebView).
+        // НЕ сдаёмся раньше времени: ждём и ретраим ~30с, юзер видит спиннер, а не ошибку.
+        await waitForInitData(10000);
         initTelegram();
         const c = await api.config().catch(() => cfg);
         if (c) setCfg(c);
 
-        // до 3 попыток auth. Но если initData так и пуст — не долбим впустую, показываем совет.
         let lastErr = null;
-        for (let attempt = 0; attempt < 3; attempt++) {
+        for (let attempt = 0; attempt < 6; attempt++) {
           try {
             const a = await api.auth();
             setMe(a.me);
@@ -42,8 +42,8 @@ export default function App() {
             break;
           } catch (e) {
             lastErr = e;
-            if (!hasInitData()) break; // initData пустой — ретраи не помогут, выходим к экрану-совету
-            await waitForInitData(2000);
+            // даже если initData пуст — ждём ещё: он часто приходит через пару секунд
+            await waitForInitData(3500);
             initTelegram();
           }
         }
@@ -83,11 +83,7 @@ export default function App() {
           <div style={{ width: 60, height: 60, border: '1.5px solid #C2A079', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C2A079', fontWeight: 700, fontSize: 28 }}>R</div>
           <div style={{ color: '#F3EEE2', fontSize: 18, fontWeight: 700 }}>Radi coffee</div>
           <div style={{ color: '#8C857A', fontSize: 13.5, lineHeight: 1.5 }}>
-            {!isTelegram()
-              ? 'Откройте приложение через бота @radicoffee_bot в Telegram.'
-              : !hasInitData()
-                ? 'Ваш Telegram не передал данные входа. Обновите в Play Market приложения «Telegram», «Android System WebView» и «Chrome», затем откройте карту заново. Если не помогло — попробуйте с другого телефона.'
-                : 'Не удалось войти. Попробуйте переоткрыть приложение.'}
+            Не удалось открыть карту.<br />Нажмите «Повторить».
             <br /><span style={{ color: '#5A554C', fontSize: 12 }}>{error}</span>
           </div>
           <div onClick={() => location.reload()} style={{ marginTop: 8, padding: '11px 22px', borderRadius: 13, background: '#C2A079', color: '#1C1A15', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
