@@ -51,6 +51,9 @@ def set_profile(account_id: int, name: str, phone: str) -> dict:
             "UPDATE accounts SET name=?, phone=?, onboarded=1, updated_at=datetime('now') WHERE id=?",
             (name, phone, account_id),
         )
+    # сразу возвращаем чашки, потерянные при сбое 30.07 — иначе гость видел бы 0
+    # до следующего прогона cron (до минуты) и решил, что лояльность не работает
+    claim_restore_for(account_id)
     return account_public(_row(account_id))
 
 
@@ -62,7 +65,69 @@ def set_phone(account_id: int, phone: str) -> dict:
             "UPDATE accounts SET phone=?, updated_at=datetime('now') WHERE id=?",
             (phone, account_id),
         )
+    claim_restore_for(account_id)
     return account_public(_row(account_id))
+
+
+def claim_restore_for(account_id: int) -> int:
+    """Возврат чашек, потерянных при порче БД 30.07.
+
+    Заявки (restore_claims) собраны из логов: фрагмент номера или имя, по которым
+    бариста находил гостя. Начисляем ТОЛЬКО если заявка однозначно указывает на этот
+    аккаунт — иначе ждём (лучше не начислить, чем отдать чужое).
+    Возвращает число выданных заявок.
+    """
+    conn = get_conn()
+    try:
+        acc = conn.execute(
+            "SELECT name, phone, onboarded FROM accounts WHERE id=?", (account_id,)
+        ).fetchone()
+        if acc is None:
+            return 0
+        claims = conn.execute(
+            "SELECT id, frag, cups, COALESCE(kind,'phone') FROM restore_claims "
+            "WHERE claimed_account_id IS NULL"
+        ).fetchall()
+    except Exception:
+        return 0  # таблицы заявок нет — восстановление не настроено, это не ошибка
+
+    issued = 0
+    for claim_id, frag, cups, kind in claims:
+        if not frag:
+            continue
+        if kind == "name":
+            if not acc["onboarded"] or not acc["name"]:
+                continue
+            if frag.strip().lower() not in acc["name"].strip().lower():
+                continue
+            rivals = conn.execute(
+                "SELECT COUNT(*) FROM accounts WHERE onboarded=1 AND lower(name) LIKE ?",
+                (f"%{frag.strip().lower()}%",),
+            ).fetchone()[0]
+        else:
+            if not acc["phone"] or frag not in acc["phone"]:
+                continue
+            rivals = conn.execute(
+                "SELECT COUNT(*) FROM accounts WHERE phone LIKE ?", (f"%{frag}%",)
+            ).fetchone()[0]
+        if rivals != 1:
+            continue  # под заявку подходит кто-то ещё — не рискуем
+
+        with tx():
+            row = conn.execute("SELECT total FROM accounts WHERE id=?", (account_id,)).fetchone()
+            total = row["total"] + cups
+            conn.execute(
+                "UPDATE accounts SET total=?, count=?, free_given=?, updated_at=datetime('now') "
+                "WHERE id=?",
+                (total, total % (CYCLE + 1), total // (CYCLE + 1), account_id),
+            )
+            conn.execute(
+                "UPDATE restore_claims SET claimed_account_id=?, claimed_at=datetime('now') "
+                "WHERE id=?",
+                (account_id, claim_id),
+            )
+        issued += 1
+    return issued
 
 
 # ---------- поиск ----------
