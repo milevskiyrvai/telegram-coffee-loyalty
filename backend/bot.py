@@ -24,7 +24,7 @@ from aiogram.types import (
 )
 
 from app import service
-from app.auth import normalize_phone
+from app.auth import clean_name, normalize_phone
 from app.db import init_db
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
@@ -61,7 +61,9 @@ async def main():
     async def start(m: Message):
         # привязываем аккаунт по tg_id (создаём при первом входе).
         # Номер НЕ просим здесь — его запросит сам мини-апп при первом входе (кнопкой «Карта»).
-        fallback = (m.from_user.first_name or "").strip()
+        # Имя из Telegram чистим: только кириллица (латиница/эмодзи/символы отбрасываются).
+        # Если после чистки пусто — оставляем пустым, мини-апп спросит имя при онбординге.
+        fallback = clean_name(m.from_user.first_name or "")
         service.get_or_create_by_tg(m.from_user.id, fallback)
         await m.answer(WELCOME, reply_markup=ReplyKeyboardRemove())
 
@@ -73,7 +75,7 @@ async def main():
         if c.user_id and c.user_id != m.from_user.id:
             return  # чужой пересланный контакт — игнор
         phone = normalize_phone(c.phone_number or "")
-        acc = service.get_or_create_by_tg(m.from_user.id, (m.from_user.first_name or "").strip())
+        acc = service.get_or_create_by_tg(m.from_user.id, clean_name(m.from_user.first_name or ""))
         if phone:
             service.set_phone(acc["id"], phone)  # только телефон, onboarded не трогаем
         # без сообщений — юзер в этот момент в мини-аппе, лишний текст в чате не нужен
