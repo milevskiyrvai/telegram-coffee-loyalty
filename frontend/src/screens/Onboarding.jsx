@@ -1,6 +1,6 @@
 // Онбординг: шаг 1 — поделиться номером, шаг 2 — ввести имя. Пиксель-в-пиксель из прототипа.
 import { useState } from 'react';
-import { displayPhone } from '../ui.js';
+import { displayPhone, normalizePhone } from '../ui.js';
 import { requestContact, haptic } from '../tg.js';
 import { api } from '../api.js';
 
@@ -25,7 +25,9 @@ export default function Onboarding({ phone, onFinish }) {
       //    часть клиентов возвращает его и в апп — тогда возьмём сразу.
       const res = await requestContact();
       if (typeof res === 'string' && res) {
-        setSharedPhone(res);
+        // Telegram отдаёт номер как есть («+7...», «7999...») — приводим к 10 цифрам,
+        // иначе на экране он покажется со сдвигом: +7 799 980-03-83
+        setSharedPhone(normalizePhone(res));
         setStep('name');
         return;
       }
