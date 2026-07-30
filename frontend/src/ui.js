@@ -2,9 +2,11 @@
 
 export const CYCLE = 5;
 
+// Приводит номер к 10 цифрам. Срезаем ТОЛЬКО код страны — одну ведущую 7/8
+// и только при 11 цифрах, иначе съедали значащие: +7 701 123-45-67 -> 011234567.
 export function normalizePhone(v) {
   let d = (v || '').replace(/\D/g, '');
-  while (d.length && (d[0] === '7' || d[0] === '8')) d = d.slice(1);
+  if (d.length === 11 && (d[0] === '7' || d[0] === '8')) d = d.slice(1);
   return d.slice(0, 10);
 }
 
