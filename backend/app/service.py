@@ -98,12 +98,16 @@ def claim_restore_for(account_id: int) -> int:
         if kind == "name":
             if not acc["onboarded"] or not acc["name"]:
                 continue
-            if frag.strip().lower() not in acc["name"].strip().lower():
+            needle = frag.strip().lower()
+            if needle not in acc["name"].strip().lower():
                 continue
-            rivals = conn.execute(
-                "SELECT COUNT(*) FROM accounts WHERE onboarded=1 AND lower(name) LIKE ?",
-                (f"%{frag.strip().lower()}%",),
-            ).fetchone()[0]
+            # ВАЖНО: считаем «конкурентов» в Python, а не через SQL lower() —
+            # lower() в SQLite не знает кириллицу, из-за чего совпадений
+            # не находилось вообще и заявки по имени никогда не выдавались.
+            names = conn.execute(
+                "SELECT name FROM accounts WHERE onboarded=1 AND name!=''"
+            ).fetchall()
+            rivals = sum(1 for row in names if needle in (row["name"] or "").strip().lower())
         else:
             if not acc["phone"] or frag not in acc["phone"]:
                 continue
