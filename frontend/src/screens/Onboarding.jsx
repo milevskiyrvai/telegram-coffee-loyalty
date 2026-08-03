@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { displayPhone, normalizePhone } from '../ui.js';
 import { requestContact, haptic } from '../tg.js';
 import { api } from '../api.js';
+import { reportProblem } from '../beacon.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -13,6 +14,7 @@ export default function Onboarding({ phone, onFinish }) {
   const [sharedPhone, setSharedPhone] = useState(phone || '');
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState(false); // ждём номер после «поделиться»
+  const [failed, setFailed] = useState('');      // текст сбоя сохранения, если он был
 
   const canFinish = name.trim().length > 0;
 
@@ -59,9 +61,14 @@ export default function Onboarding({ phone, onFinish }) {
   async function finish() {
     if (!canFinish || busy) return;
     setBusy(true);
+    setFailed('');
     haptic('success');
     try {
       await onFinish(name.trim(), sharedPhone);
+    } catch (e) {
+      // Раньше сбой проглатывался молча, и гость видел просто мёртвую кнопку.
+      reportProblem('profile', e);
+      setFailed(e.message || 'Не удалось сохранить');
     } finally {
       setBusy(false);
     }
@@ -115,7 +122,12 @@ export default function Onboarding({ phone, onFinish }) {
               fontSize: 16, fontWeight: 700, textAlign: 'center',
               cursor: canFinish ? 'pointer' : 'default',
             }}
-          >Начать копить</div>
+          >{busy ? 'Сохраняем…' : 'Начать копить'}</div>
+          {failed && (
+            <div style={{ color: '#C2A079', fontSize: 12, marginTop: 12, textAlign: 'center', lineHeight: 1.5 }}>
+              {failed}<br />Попробуйте ещё раз
+            </div>
+          )}
         </>
       )}
     </div>

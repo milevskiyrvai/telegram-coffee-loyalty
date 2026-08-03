@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { api } from './api.js';
 import { initTelegram, waitForInitData, tgDiag } from './tg.js';
+import { installProblemReporter, reportProblem } from './beacon.js';
 import { Spinner } from './components.jsx';
 import Onboarding from './screens/Onboarding.jsx';
 import ClientCard from './screens/ClientCard.jsx';
@@ -23,6 +24,7 @@ export default function App() {
   }
 
   useEffect(() => {
+    installProblemReporter();
     initTelegram();
     (async () => {
       try {
@@ -49,6 +51,7 @@ export default function App() {
         }
         if (lastErr) throw lastErr;
       } catch (e) {
+        reportProblem('auth', e);
         setError(e.message || 'Ошибка входа');
       } finally {
         setLoading(false);
@@ -61,20 +64,12 @@ export default function App() {
     document.addEventListener('visibilitychange', onVisible);
     const wa = window.Telegram?.WebApp;
     try { wa?.onEvent?.('activated', refresh); } catch (e) {}
-
-    // Пока карта открыта, гость стоит у стойки и бариста отмечает ему кофе.
-    // Без опроса чашка появлялась только после сворачивания и повторного входа —
-    // гости жаловались, что «порции не обновляются».
-    const poll = setInterval(() => { if (!document.hidden) refresh(); }, 3000);
-
     return () => {
-      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
       try { wa?.offEvent?.('activated', refresh); } catch (e) {}
     };
   }, []); // eslint-disable-line
 
-  // Один и тот же вызов и для онбординга, и для смены имени с карты клиента.
   async function finishOnboarding(name, phone) {
     const r = await api.saveProfile(name, phone || me?.phone || '');
     setMe(r.me);
@@ -115,7 +110,7 @@ export default function App() {
   } else if (me.role === 'barista') {
     content = <Barista />;
   } else {
-    content = <ClientCard me={me} address={cfg.address} onRename={finishOnboarding} />;
+    content = <ClientCard me={me} address={cfg.address} />;
   }
 
   return <div className="app-screen">{content}</div>;

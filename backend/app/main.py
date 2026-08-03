@@ -1,6 +1,7 @@
 """Radi Coffee API — FastAPI + SQLite. Авторизация по Telegram WebApp initData."""
 
 import logging
+import time
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -74,6 +75,16 @@ class ActionIn(BaseModel):
     type: str  # cup|redeem|skip|bonus
 
 
+class BeaconIn(BaseModel):
+    step: str = ""          # где споткнулось: auth | profile | js | promise
+    message: str = ""
+    platform: str = ""      # ios | android | tdesktop
+    tg_version: str = ""
+    init_len: int = 0
+    uid: int | None = None  # tg_id гостя, если приложение успело его получить
+    app_version: str = ""
+
+
 class RoleIn(BaseModel):
     role: str  # barista|client
 
@@ -83,6 +94,36 @@ class RoleIn(BaseModel):
 @app.get("/api/config")
 def get_config():
     return {"address": CAFE_ADDRESS, "cycle": CYCLE}
+
+
+_client_log = logging.getLogger("radi.client")
+_beacon_rate = [0, 0]  # [минута, счётчик] — предохранитель, чтобы поток не утопил журнал
+
+
+@app.post("/api/beacon", status_code=204)
+def beacon(body: BeaconIn):
+    """Маячок с телефона гостя: приложение само сообщает, на чём споткнулось.
+
+    Без авторизации намеренно — чаще всего ломается как раз она, и сообщение
+    иначе бы не дошло. Раньше о сбоях мы узнавали только со слов гостя в кафе,
+    и разбирать приходилось, пока человек не ушёл.
+    """
+    minute = int(time.time() // 60)
+    if _beacon_rate[0] != minute:
+        _beacon_rate[0], _beacon_rate[1] = minute, 0
+    _beacon_rate[1] += 1
+    if _beacon_rate[1] > 120:
+        return None
+
+    def cut(s: str) -> str:
+        return (s or "").replace("\n", " ")[:160]
+
+    _client_log.warning(
+        "CLIENT-ERROR step=%s uid=%s platform=%s tg=%s app=%s init_len=%s msg=%s",
+        cut(body.step), body.uid, cut(body.platform), cut(body.tg_version),
+        cut(body.app_version), body.init_len, cut(body.message),
+    )
+    return None
 
 
 @app.post("/api/auth")
