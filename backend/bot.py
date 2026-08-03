@@ -7,6 +7,7 @@
 (http://user:pass@host:port) если api.telegram.org режется ТСПУ.
 """
 import asyncio
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -26,6 +27,9 @@ from aiogram.types import (
 from app import service
 from app.auth import clean_name, normalize_phone
 from app.db import init_db
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+log = logging.getLogger("radi.bot")
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://radicoffee.consoleai.ru")
@@ -64,7 +68,8 @@ async def main():
         # Имя из Telegram чистим: только кириллица (латиница/эмодзи/символы отбрасываются).
         # Если после чистки пусто — оставляем пустым, мини-апп спросит имя при онбординге.
         fallback = clean_name(m.from_user.first_name or "")
-        service.get_or_create_by_tg(m.from_user.id, fallback)
+        acc = service.get_or_create_by_tg(m.from_user.id, fallback)
+        log.info("START tg=%s -> аккаунт id=%s", m.from_user.id, acc["id"])
         await m.answer(WELCOME, reply_markup=ReplyKeyboardRemove())
 
     @dp.message(F.contact)
@@ -72,12 +77,20 @@ async def main():
         # НЕВИДИМЫЙ обработчик: когда мини-апп вызывает requestContact(), номер прилетает СЮДА.
         # Молча сохраняем его — мини-апп подхватит через /api/me.
         c = m.contact
+        # Логируем КАЖДУЮ ветку: без этого «гость поделился номером, а он не сохранился»
+        # было невозможно разобрать — бот не оставлял о себе ни строчки.
         if c.user_id and c.user_id != m.from_user.id:
-            return  # чужой пересланный контакт — игнор
+            log.warning("КОНТАКТ ЧУЖОЙ tg=%s прислал контакт user_id=%s — игнор",
+                        m.from_user.id, c.user_id)
+            return
         phone = normalize_phone(c.phone_number or "")
         acc = service.get_or_create_by_tg(m.from_user.id, clean_name(m.from_user.first_name or ""))
-        if phone:
-            service.set_phone(acc["id"], phone)  # только телефон, onboarded не трогаем
+        if not phone:
+            log.warning("КОНТАКТ ПУСТОЙ tg=%s аккаунт id=%s исходный=%r — номер не сохранён",
+                        m.from_user.id, acc["id"], c.phone_number)
+            return
+        service.set_phone(acc["id"], phone)  # только телефон, onboarded не трогаем
+        log.info("НОМЕР СОХРАНЁН tg=%s аккаунт id=%s номер=%s", m.from_user.id, acc["id"], phone)
         # без сообщений — юзер в этот момент в мини-аппе, лишний текст в чате не нужен
 
     @dp.message(F.text == "/app")
@@ -87,7 +100,12 @@ async def main():
     # Кнопка-меню (слева от поля ввода) → сразу открывает мини-апп
     await bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Карта", web_app=web_app))
 
-    await bot.delete_webhook(drop_pending_updates=True)
+    # НЕ выбрасываем накопленные сообщения. Раньше стояло drop_pending_updates=True,
+    # и каждый перезапуск бота (в том числе при выкатке) безвозвратно уничтожал
+    # контакты, отправленные в этот момент: гость жал «Поделиться номером»,
+    # номер не сохранялся, приложение ждало впустую и гость видел ошибку.
+    await bot.delete_webhook(drop_pending_updates=False)
+    log.info("бот запущен, кнопка меню ведёт на %s", WEBAPP_URL)
     await dp.start_polling(bot)
 
 
