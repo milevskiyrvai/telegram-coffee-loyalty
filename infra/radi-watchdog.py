@@ -45,19 +45,29 @@ def load_env():
     return cfg
 
 
-def notify(cfg, text):
+def notify(cfg, text) -> bool:
+    """True — доставлено хотя бы одному владельцу.
+
+    Алерты идут через тот же прокси, что и бот: если упал именно прокси,
+    доставка невозможна. Раньше это молча считалось успехом, скрипт замолкал
+    на час, и о падении узнавали из «восстановилось» постфактум.
+    """
     token = cfg.get("BOT_TOKEN", "")
     proxy = cfg.get("TG_PROXY", "")
     owners = [x.strip() for x in cfg.get("OWNER_TG_IDS", "").split(",") if x.strip()]
     if not token or not owners:
-        return
+        return False
     px = f"-x {shlex.quote(proxy)} " if proxy else ""
+    delivered = False
     for chat in owners:
-        sh(
+        out = sh(
             f"curl -s -m15 {px}-X POST "
             f"https://api.telegram.org/bot{token}/sendMessage "
             f"-d chat_id={chat} --data-urlencode text={shlex.quote(text)}"
         )
+        if '"ok":true' in out:
+            delivered = True
+    return delivered
 
 
 def main():
@@ -152,18 +162,29 @@ def main():
     now = time.time()
     if problems:
         key = "|".join(problems)
-        if state.get("last_key") != key or now - state.get("last_sent", 0) > 3600:
+        # Пытаемся отправить, если: новая проблема / прошёл час / прошлый алерт НЕ ДОШЁЛ.
+        # Флаг undelivered заставляет повторять каждую минуту, пока доставка не
+        # подтвердится — иначе при лежащем прокси владелец не узнал бы ничего.
+        # last_key фиксируем всегда — чтобы после починки ушло «восстановилось».
+        if (state.get("last_key") != key
+                or now - state.get("last_sent", 0) > 3600
+                or state.get("undelivered")):
             text = ("🚨 Radi Coffee — проблема:\n\n"
                     + "\n".join("• " + p for p in problems)
                     + f"\n\n{datetime.now().strftime('%d.%m %H:%M')}")
-            notify(cfg, text)
-            state["last_sent"] = now
+            if notify(cfg, text):
+                state["last_sent"] = now
+                state["undelivered"] = False
+            else:
+                state["undelivered"] = True
             state["last_key"] = key
         print("ПРОБЛЕМЫ:", problems)
     else:
         if state.get("last_key"):
-            notify(cfg, "✅ Radi Coffee: всё восстановилось, работает штатно")
-            state["last_key"] = None
+            # не дошло «восстановилось» — last_key остаётся, повторим на следующем круге
+            if notify(cfg, "✅ Radi Coffee: всё восстановилось, работает штатно"):
+                state["last_key"] = None
+                state["undelivered"] = False
         print("ok")
 
     try:
