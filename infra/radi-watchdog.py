@@ -128,12 +128,19 @@ def main():
         except Exception:
             pass
 
-    # 7. бот реально достаёт Telegram (у нас через прокси — легко отвалится)
+    # 7. бот реально достаёт Telegram (у нас через прокси — легко отвалится).
+    # Три попытки, алерт только если упали ВСЕ: одиночный запрос ловил секундные
+    # моргания сети Москва-Франкфурт и будил владельца ложняком (11.08 21:40).
+    # Реальное падение прокси всё равно поймается — оно живёт дольше трёх попыток.
     token = cfg.get("BOT_TOKEN", "")
     proxy = cfg.get("TG_PROXY", "")
     if token:
         px = f"-x {shlex.quote(proxy)} " if proxy else ""
-        if '"ok":true' not in sh(f"curl -s -m12 {px}https://api.telegram.org/bot{token}/getMe"):
+        for _ in range(3):
+            if '"ok":true' in sh(f"curl -s -m12 {px}https://api.telegram.org/bot{token}/getMe"):
+                break
+            time.sleep(3)
+        else:
             problems.append("бот не достучится до Telegram (прокси или сеть)")
 
     # запоминаем максимумы, чтобы ловить именно падение
