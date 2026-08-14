@@ -25,7 +25,7 @@ def _row(account_id: int):
 
 # ---------- auth / upsert ----------
 
-def get_or_create_by_tg(tg_id: int, fallback_name: str = "") -> dict:
+def get_or_create_by_tg(tg_id: int, fallback_name: str = "", username: str = "") -> dict:
     """Находит аккаунт по tg_id или создаёт новый. Применяет роль owner из конфига."""
     conn = get_conn()
     row = conn.execute("SELECT * FROM accounts WHERE tg_id=?", (tg_id,)).fetchone()
@@ -33,8 +33,8 @@ def get_or_create_by_tg(tg_id: int, fallback_name: str = "") -> dict:
         if row is None:
             role = "owner" if tg_id in OWNER_TG_IDS else "client"
             cur = conn.execute(
-                "INSERT INTO accounts(tg_id, name, role) VALUES(?,?,?)",
-                (tg_id, fallback_name, role),
+                "INSERT INTO accounts(tg_id, name, role, username) VALUES(?,?,?,?)",
+                (tg_id, fallback_name, role, username or ""),
             )
             account_id = cur.lastrowid
         else:
@@ -42,6 +42,10 @@ def get_or_create_by_tg(tg_id: int, fallback_name: str = "") -> dict:
             # владелец всегда owner (даже если когда-то был client)
             if tg_id in OWNER_TG_IDS and row["role"] != "owner":
                 conn.execute("UPDATE accounts SET role='owner' WHERE id=?", (account_id,))
+            # юзернейм освежаем на каждом входе: люди его меняют, а при
+            # восстановлении данных это запасная нить к гостю помимо телефона
+            if username and row["username"] != username:
+                conn.execute("UPDATE accounts SET username=? WHERE id=?", (username, account_id))
     return account_public(_row(account_id))
 
 

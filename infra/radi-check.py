@@ -18,8 +18,10 @@ DB = "/opt/radicoffee/backend/data/radi.db"
 def find_accounts(conn, needle):
     rows = conn.execute(
         "SELECT id, tg_id, name, phone, role, count, total, free_given, onboarded,"
-        " created_at, updated_at FROM accounts WHERE phone LIKE ? OR name LIKE ?",
-        (f"%{needle}%", f"%{needle}%"),
+        " created_at, updated_at,"
+        " COALESCE(username,'') AS username"
+        " FROM accounts WHERE phone LIKE ? OR name LIKE ? OR username LIKE ?",
+        (f"%{needle}%", f"%{needle}%", f"%{needle}%"),
     ).fetchall()
     return rows
 
@@ -55,7 +57,8 @@ def main():
         print(f"❌ Аккаунт с «{needle}» НЕ НАЙДЕН — гость ещё не регистрировался")
     for r in rows:
         status = "✅ готов" if r["onboarded"] else "⚠️ НЕ завершил регистрацию (не ввёл имя)"
-        print(f"=== id={r['id']}  {r['name'] or '(без имени)'}  +7{r['phone']} ===")
+        u = f"  @{r['username']}" if r["username"] else ""
+        print(f"=== id={r['id']}  {r['name'] or '(без имени)'}{u}  +7{r['phone']} ===")
         print(f"  состояние: {status}")
         print(f"  роль: {r['role']}")
         print(f"  чашек всего: {r['total']} | прогресс к подарку: {r['count']}/5 | подарков: {r['free_given']}")

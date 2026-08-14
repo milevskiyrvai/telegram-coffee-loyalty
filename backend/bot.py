@@ -68,7 +68,7 @@ async def main():
         # Имя из Telegram чистим: только кириллица (латиница/эмодзи/символы отбрасываются).
         # Если после чистки пусто — оставляем пустым, мини-апп спросит имя при онбординге.
         fallback = clean_name(m.from_user.first_name or "")
-        acc = service.get_or_create_by_tg(m.from_user.id, fallback)
+        acc = service.get_or_create_by_tg(m.from_user.id, fallback, m.from_user.username or "")
         log.info("START tg=%s -> аккаунт id=%s", m.from_user.id, acc["id"])
         await m.answer(WELCOME, reply_markup=ReplyKeyboardRemove())
 
@@ -84,7 +84,9 @@ async def main():
                         m.from_user.id, c.user_id)
             return
         phone = normalize_phone(c.phone_number or "")
-        acc = service.get_or_create_by_tg(m.from_user.id, clean_name(m.from_user.first_name or ""))
+        acc = service.get_or_create_by_tg(
+            m.from_user.id, clean_name(m.from_user.first_name or ""), m.from_user.username or ""
+        )
         if not phone:
             log.warning("КОНТАКТ ПУСТОЙ tg=%s аккаунт id=%s исходный=%r — номер не сохранён",
                         m.from_user.id, acc["id"], c.phone_number)

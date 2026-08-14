@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS accounts (
     tg_id      INTEGER UNIQUE,            -- telegram user id (NULL до привязки)
     max_id     INTEGER UNIQUE,            -- max user id (на будущее)
     name       TEXT NOT NULL DEFAULT '',  -- имя для отображения (кириллица/пробел/дефис)
+    username   TEXT NOT NULL DEFAULT '',  -- @юзернейм из Telegram (без @); запасной канал
+                                          -- связи и опоры при восстановлении данных
     phone      TEXT NOT NULL DEFAULT '',  -- 10 цифр нац. номера
     role       TEXT NOT NULL DEFAULT 'client',  -- 'client' | 'barista' | 'owner'
     count      INTEGER NOT NULL DEFAULT 0,       -- прогресс цикла 0..CYCLE
@@ -78,4 +80,8 @@ CREATE INDEX IF NOT EXISTS idx_actions_created ON actions(created_at);
 def init_db() -> None:
     conn = get_conn()
     conn.executescript(SCHEMA)
+    # миграция старых баз: CREATE IF NOT EXISTS новых колонок не добавляет
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(accounts)")]
+    if "username" not in cols:
+        conn.execute("ALTER TABLE accounts ADD COLUMN username TEXT NOT NULL DEFAULT ''")
     conn.commit()

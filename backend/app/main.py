@@ -49,7 +49,7 @@ def current_account(authorization: str | None = Header(default=None)) -> dict:
     user = parsed["user"]
     tg_id = int(user["id"])
     fallback = clean_name(f"{user.get('first_name','')} {user.get('last_name','')}")
-    return service.get_or_create_by_tg(tg_id, fallback)
+    return service.get_or_create_by_tg(tg_id, fallback, user.get("username") or "")
 
 
 def require_staff(acc: dict = Depends(current_account)) -> dict:
