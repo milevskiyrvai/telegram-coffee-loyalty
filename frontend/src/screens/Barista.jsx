@@ -24,6 +24,26 @@ export default function Barista() {
       )}
       <ScanOverlay open={g.scanning} onCancel={g.cancelScan} onResolve={g.resolveScanDemo} />
       <ConfirmDialog {...g.confirmDialog} onConfirm={g.confirm} onCancel={g.cancel} />
+      <ErrorBar text={g.error} onClose={g.clearError} />
     </>
+  );
+}
+
+// Плашка сбоя. Раньше ошибки глотались молча, и бариста видела мёртвую кнопку.
+export function ErrorBar({ text, onClose }) {
+  if (!text) return null;
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', left: 12, right: 12, bottom: 14, zIndex: 60,
+        background: '#2A211A', border: '1px solid rgba(194,160,121,0.55)', borderRadius: 14,
+        padding: '13px 16px', color: '#ECE7DB', fontSize: 13.5, lineHeight: 1.45,
+        boxShadow: '0 10px 30px rgba(0,0,0,0.45)', cursor: 'pointer',
+      }}
+    >
+      {text}
+      <div style={{ color: '#8C857A', fontSize: 11, marginTop: 6 }}>нажмите, чтобы скрыть</div>
+    </div>
   );
 }

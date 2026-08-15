@@ -12,13 +12,21 @@ export function useGuests() {
   const [undoLabel, setUndoLabel] = useState(null);
   const [pending, setPending] = useState(null);
   const [scanning, setScanning] = useState(false);
+  const [error, setError] = useState('');   // текст сбоя для баристы
   const debRef = useRef(null);
+  // Защита от повторной отправки: React обновляет состояние не мгновенно, поэтому
+  // два быстрых тапа успевали прочитать одно и то же pending и уходили в сеть оба —
+  // гостю начислялись две чашки. Ref меняется сразу, ещё до перерисовки.
+  const inFlight = useRef(false);
 
   const reload = useCallback(async (q) => {
     try {
       const r = await api.accounts(q ?? query);
       setAccounts(r.accounts);
-    } catch (e) { /* тихо: список просто не обновится */ }
+      setError('');
+    } catch (e) {
+      setError('Не удалось загрузить список гостей. Проверьте связь.');
+    }
   }, [query]);
 
   // дебаунс поиска
@@ -35,7 +43,10 @@ export function useGuests() {
       setUndoLabel(r.account.undoLabel || null);
       setScreen('card');
       setPending(null);
-    } catch (e) {}
+      setError('');
+    } catch (e) {
+      setError('Не удалось открыть карточку гостя. Попробуйте ещё раз.');
+    }
   }, []);
 
   const back = useCallback(() => {
@@ -52,46 +63,62 @@ export function useGuests() {
 
   const confirm = useCallback(async () => {
     const p = pending;
-    if (!p || !guest) return;
+    if (!p || !guest || inFlight.current) return;
+    inFlight.current = true;
     setPending(null);
+    setError('');
     try {
       const r = await api.action(guest.id, p.kind);
       setGuest(r.account);
       setUndoLabel(r.account.undoLabel || null);
       haptic('success');
-    } catch (e) { haptic('error'); }
+    } catch (e) {
+      haptic('error');
+      // Раньше сбой глотался молча: бариста видела прежнюю цифру и жала снова,
+      // а когда связь возвращалась — прилетали все накопленные нажатия сразу.
+      setError('Кофе НЕ отмечен: ' + (e.message || 'нет связи') + '. Повторите.');
+    } finally {
+      inFlight.current = false;
+    }
   }, [pending, guest]);
 
   const undo = useCallback(async () => {
-    if (!guest) return;
+    if (!guest || inFlight.current) return;
+    inFlight.current = true;
+    setError('');
     try {
       const r = await api.undo(guest.id);
       setGuest(r.account);
       setUndoLabel(r.account.undoLabel || null);
       haptic('light');
-    } catch (e) {}
+    } catch (e) {
+      haptic('error');
+      setError('Отменить не получилось: ' + (e.message || 'нет связи'));
+    } finally {
+      inFlight.current = false;
+    }
   }, [guest]);
 
   // сканирование QR гостя
   const startScan = useCallback(async () => {
     haptic('light');
-    if (hasNativeScanner()) {
-      const text = await scanQr();
-      if (text) {
-        const m = String(text).match(/radi:(\d+)/);
-        if (m) openGuest(Number(m[1]));
-      }
+    if (!hasNativeScanner()) {
+      // Раньше здесь открывался СЛУЧАЙНЫЙ гость из списка (заглушка из прототипа) —
+      // бариста могла отметить кофе не тому человеку. Теперь честно говорим правду.
+      setError('Сканер недоступен на этом устройстве. Найдите гостя по имени или номеру.');
       return;
     }
-    // браузерный фолбэк: показываем оверлей и берём первого подходящего (демо)
-    setScanning(true);
+    const text = await scanQr();
+    if (!text) return;                       // гость закрыл сканер — это не ошибка
+    const m = String(text).match(/radi:(\d+)/);
+    if (!m) {
+      setError('Это не карта Radi Coffee. Попросите гостя открыть карту в приложении.');
+      return;
+    }
+    openGuest(Number(m[1]));
   }, [openGuest]);
 
-  const resolveScanDemo = useCallback(() => {
-    setScanning(false);
-    const pool = accounts.filter((a) => a.role !== 'barista');
-    if (pool.length) openGuest(pool[Math.floor(Math.random() * pool.length)].id);
-  }, [accounts, openGuest]);
+  const resolveScanDemo = useCallback(() => setScanning(false), []);
 
   const cancelScan = () => setScanning(false);
 
@@ -118,5 +145,6 @@ export function useGuests() {
     confirm, cancel, undo, confirmDialog,
     scanning, startScan, resolveScanDemo, cancelScan,
     reload,
+    error, clearError: () => setError(''),
   };
 }

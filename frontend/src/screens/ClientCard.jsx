@@ -1,14 +1,45 @@
 // Экран клиента: карта лояльности + QR. Пиксель-в-пиксель из прототипа.
+import { useState } from 'react';
 import { LogoR } from '../components.jsx';
 import { buildCupSlots } from '../ui.js';
-import { openLink } from '../tg.js';
+import { openLink, haptic } from '../tg.js';
 import Qr from '../Qr.jsx';
 
-export default function ClientCard({ me, address }) {
+export default function ClientCard({ me, address, onRename }) {
   const hot = me.count >= 5;
   const status = hot ? 'Заберите 6-й кофе бесплатно ♥' : `До подарка осталось: ${5 - me.count}`;
   const qrValue = 'radi:' + me.id;
   const cups = buildCupSlots(me.count);
+
+  // Смена имени. Нужна тем, у кого после аварии 30.07 в карте осталось имя
+  // из профиля Telegram (латиница, эмодзи) вместо выбранного самим гостем.
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState('');
+  const canSave = draft.trim().length > 0 && !busy;
+
+  function openEdit() {
+    haptic('light');
+    setDraft((me.name || '').replace(/\s+/g, ' ').trim());
+    setFailed('');
+    setEditing(true);
+  }
+
+  async function save() {
+    if (!canSave) return;
+    setBusy(true);
+    setFailed('');
+    try {
+      await onRename(draft.trim(), me.phone);
+      haptic('success');
+      setEditing(false);
+    } catch (e) {
+      setFailed(e.message || 'Не удалось сохранить');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '12px 22px 18px', overflowY: 'auto' }}>
@@ -16,7 +47,11 @@ export default function ClientCard({ me, address }) {
         <LogoR />
         <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
           <span style={{ color: '#ECE7DB', fontSize: 14, fontWeight: 600 }}>{me.name}</span>
-          <span style={{ color: '#8C857A', fontSize: 11 }}>ваша карта лояльности</span>
+          <span style={{ color: '#8C857A', fontSize: 11 }}>
+            ваша карта лояльности
+            {' · '}
+            <span onClick={openEdit} style={{ color: '#C2A079', cursor: 'pointer' }}>изменить имя</span>
+          </span>
         </div>
       </div>
 
@@ -48,6 +83,44 @@ export default function ClientCard({ me, address }) {
           >consoleai.ru</span>
         </div>
       </div>
+
+      {editing && (
+        <div
+          onClick={() => !busy && setEditing(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 30, zIndex: 50 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: 340, background: '#1C1A15', border: '1px solid rgba(194,160,121,0.42)', borderRadius: 22, padding: 22, boxShadow: '0 16px 40px rgba(0,0,0,0.35)' }}
+          >
+            <div style={{ color: '#D8D2C2', fontSize: 17, fontWeight: 600, textAlign: 'center' }}>Как вас представить в кофейне?</div>
+            <input
+              value={draft}
+              autoFocus
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Ваше имя"
+              style={{ width: '100%', background: '#25231D', border: '1px solid rgba(194,160,121,0.2)', borderRadius: 16, outline: 'none', color: '#ECE7DB', fontSize: 18, textAlign: 'center', padding: 16, margin: '18px 0 0' }}
+            />
+            <div
+              onClick={save}
+              style={{
+                width: '100%', padding: 15, borderRadius: 16, marginTop: 16,
+                background: canSave ? '#C2A079' : '#25231D',
+                color: canSave ? '#1C1A15' : '#5A554C',
+                fontSize: 15.5, fontWeight: 700, textAlign: 'center',
+                cursor: canSave ? 'pointer' : 'default',
+              }}
+            >{busy ? 'Сохраняем…' : 'Сохранить'}</div>
+            {failed && (
+              <div style={{ color: '#C2A079', fontSize: 12, marginTop: 12, textAlign: 'center', lineHeight: 1.5 }}>{failed}</div>
+            )}
+            <div
+              onClick={() => !busy && setEditing(false)}
+              style={{ color: '#6E685E', fontSize: 13, textAlign: 'center', marginTop: 12, cursor: 'pointer' }}
+            >Отмена</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

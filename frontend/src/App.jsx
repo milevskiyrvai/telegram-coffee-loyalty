@@ -64,7 +64,14 @@ export default function App() {
     document.addEventListener('visibilitychange', onVisible);
     const wa = window.Telegram?.WebApp;
     try { wa?.onEvent?.('activated', refresh); } catch (e) {}
+
+    // Пока карта открыта, гость стоит у стойки и бариста отмечает ему кофе.
+    // Без опроса чашка появлялась только после сворачивания и повторного входа —
+    // гости жаловались, что «порции не обновляются».
+    const poll = setInterval(() => { if (!document.hidden) refresh(); }, 3000);
+
     return () => {
+      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
       try { wa?.offEvent?.('activated', refresh); } catch (e) {}
     };
@@ -110,7 +117,7 @@ export default function App() {
   } else if (me.role === 'barista') {
     content = <Barista />;
   } else {
-    content = <ClientCard me={me} address={cfg.address} />;
+    content = <ClientCard me={me} address={cfg.address} onRename={finishOnboarding} />;
   }
 
   return <div className="app-screen">{content}</div>;

@@ -2,20 +2,26 @@
 import hashlib
 import hmac
 import json
+import os
 import re
 import time
 from urllib.parse import parse_qsl
 
 from .config import BOT_TOKEN, DEV_AUTH
 
+# Тестовый бот-зеркало (диагностика недоступности мини-аппа у части гостей):
+# его initData подписан ЕГО токеном, поэтому подпись проверяем по обоим.
+# Пусто — проверка идёт только по основному, как раньше.
+TEST_BOT_TOKEN = os.getenv("RADI_TEST_BOT_TOKEN", "")
+
 
 class AuthError(Exception):
     pass
 
 
-def _secret_key() -> bytes:
+def _secret_key(token: str) -> bytes:
     # secret_key = HMAC_SHA256("WebAppData", bot_token)
-    return hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
+    return hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
 
 
 def verify_init_data(init_data: str, max_age_sec: int = 7 * 86400) -> dict:
@@ -29,8 +35,12 @@ def verify_init_data(init_data: str, max_age_sec: int = 7 * 86400) -> dict:
         raise AuthError("no hash in initData")
 
     data_check_string = "\n".join(f"{k}={pairs[k]}" for k in sorted(pairs))
-    calc = hmac.new(_secret_key(), data_check_string.encode(), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(calc, received_hash):
+    tokens = [t for t in (BOT_TOKEN, TEST_BOT_TOKEN) if t]
+    for token in tokens:
+        calc = hmac.new(_secret_key(token), data_check_string.encode(), hashlib.sha256).hexdigest()
+        if hmac.compare_digest(calc, received_hash):
+            break
+    else:
         raise AuthError("bad initData signature")
 
     auth_date = int(pairs.get("auth_date", "0") or 0)
@@ -78,10 +88,14 @@ def normalize_phone(v: str) -> str:
     return d[:10]
 
 
-_NAME_RE = re.compile(r"[^А-Яа-яЁё \-]")
+# Кириллица И латиница, пробел, дефис, апостроф. Раньше латиница вырезалась:
+# гость вводил «Maria» и получал отказ «пустое имя» при заполненном поле, а
+# «Anna Trыntrava» молча превращалась в одну букву «Ы». Цифры, эмодзи и символы
+# по-прежнему отсекаем — от них в базе был мусор вроде «K@trin» и «Joana🧿».
+_NAME_RE = re.compile(r"[^А-Яа-яЁёA-Za-z \-']")
 
 
 def clean_name(v: str) -> str:
-    """Только кириллица, пробел, дефис; схлопывает пробелы."""
+    """Буквы (кириллица/латиница), пробел, дефис, апостроф; схлопывает пробелы."""
     s = _NAME_RE.sub("", v or "")
     return re.sub(r"\s+", " ", s).strip()[:48]

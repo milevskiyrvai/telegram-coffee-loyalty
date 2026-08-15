@@ -6,6 +6,7 @@ import { haptic } from '../tg.js';
 import { Header, LogoR, ScanButton, SearchBar, ConfirmDialog, ScanOverlay } from '../components.jsx';
 import GuestList from './GuestList.jsx';
 import GuestCard from './GuestCard.jsx';
+import { ErrorBar } from './Barista.jsx';
 import { useGuests } from '../useGuests.js';
 
 function StatsTab() {
@@ -188,6 +189,7 @@ function GuestsTab({ hideNav }) {
       )}
       <ScanOverlay open={g.scanning} onCancel={g.cancelScan} onResolve={g.resolveScanDemo} />
       <ConfirmDialog {...g.confirmDialog} onConfirm={g.confirm} onCancel={g.cancel} />
+      <ErrorBar text={g.error} onClose={g.clearError} />
     </>
   );
 }

@@ -1,5 +1,7 @@
 """Доменная логика лояльности: начисление, откат, статистика. Атомарно через SQLite tx."""
 
+import os
+
 from .config import BONUS_CAP, CYCLE, OWNER_TG_IDS
 from .db import get_conn, tx
 
@@ -80,7 +82,17 @@ def claim_restore_for(account_id: int) -> int:
     бариста находил гостя. Начисляем ТОЛЬКО если заявка однозначно указывает на этот
     аккаунт — иначе ждём (лучше не начислить, чем отдать чужое).
     Возвращает число выданных заявок.
+
+    ⛔ ВЫКЛЮЧЕНО 15.08.2026. Аудит показал две ошибки: (1) заявки — это снимки
+    одного нарастающего счёта, а код их СУММИРОВАЛ (25 гостей получили 196 лишних
+    чашек); (2) совпадение по имени отдало 10 чашек Надежды аккаунту Владимира.
+    Авария была 30.07, восстанавливать больше нечего: 30 оставшихся заявок
+    разбираются вручную через radi-check.py. Включить обратно можно только вместе
+    с исправлением логики: RADI_AUTO_RESTORE=1 в .env.
     """
+    if os.getenv("RADI_AUTO_RESTORE", "") != "1":
+        return 0
+
     conn = get_conn()
     try:
         acc = conn.execute(
@@ -141,24 +153,33 @@ def claim_restore_for(account_id: int) -> int:
 # ---------- поиск ----------
 
 def search_accounts(query: str, digits: str, limit: int = 60) -> list:
+    """Поиск гостя баристой по имени, телефону или юзернейму.
+
+    ВАЖНО: фильтруем в Python, а не через SQL LIKE + COLLATE NOCASE. COLLATE NOCASE
+    в SQLite умеет менять регистр только у латиницы, поэтому «ирина» не находило
+    «Ирина» — для баристы это выглядело как «гостя нет в базе», и она заводила дубль
+    или не отмечала кофе. Python .lower() кириллицу знает. На 231 аккаунте это
+    незаметно по скорости и заодно снимает проблему с % и _ в запросе.
+    """
     conn = get_conn()
-    q = (query or "").strip()
-    if not q:
-        rows = conn.execute(
-            "SELECT * FROM accounts WHERE onboarded=1 ORDER BY name COLLATE NOCASE LIMIT ?",
-            (limit,),
-        ).fetchall()
-    else:
-        like = f"%{q}%"
-        params = [like]
-        sql = "SELECT * FROM accounts WHERE onboarded=1 AND (name LIKE ? COLLATE NOCASE"
-        if digits:
-            sql += " OR phone LIKE ?"
-            params.append(f"%{digits}%")
-        sql += ") ORDER BY name COLLATE NOCASE LIMIT ?"
-        params.append(limit)
-        rows = conn.execute(sql, params).fetchall()
-    return [account_public(r) for r in rows]
+    rows = conn.execute("SELECT * FROM accounts WHERE onboarded=1").fetchall()
+    q = (query or "").strip().lower()
+
+    if q:
+        found = []
+        for r in rows:
+            if q in (r["name"] or "").lower():
+                found.append(r)
+                continue
+            if q in ("@" + (r["username"] or "")).lower() and r["username"]:
+                found.append(r)
+                continue
+            if digits and digits in (r["phone"] or ""):
+                found.append(r)
+        rows = found
+
+    rows.sort(key=lambda r: (r["name"] or "").lower())
+    return [account_public(r) for r in rows[:limit]]
 
 
 def list_baristas() -> list:

@@ -10,29 +10,49 @@ async function req(method, path, body) {
     headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
   }
-  // таймаут, чтобы запрос не висел вечно на нестабильной сети/VPN
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), 15000);
-  opts.signal = ctl.signal;
+  // Таймаут, чтобы запрос не висел вечно на нестабильной сети/VPN.
+  // AbortController есть не везде: на iOS 11-12 и старых Android WebView его нет,
+  // и `new AbortController()` бросал ReferenceError ДО первого запроса — приложение
+  // открывалось, но войти было нельзя никогда. Поэтому работаем и без него.
+  const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  let timedOut = false;
+  const t = setTimeout(() => { timedOut = true; if (ctl) ctl.abort(); }, 15000);
+  if (ctl) opts.signal = ctl.signal;
+
+  const fail = (e) => {
+    clearTimeout(t);
+    const err = new Error(
+      (timedOut || e?.name === 'AbortError') ? 'Превышено время ожидания сети' : 'Нет связи с сервером',
+    );
+    err.status = 0;
+    return err;
+  };
+
   let r;
   try {
     r = await fetch(BASE + path, opts);
   } catch (e) {
-    clearTimeout(t);
-    const err = new Error(e.name === 'AbortError' ? 'Превышено время ожидания сети' : 'Нет связи с сервером');
-    err.status = 0;
-    throw err;
+    throw fail(e);
   }
-  clearTimeout(t);
   if (!r.ok) {
     let detail = r.statusText;
     try { detail = (await r.json()).detail || detail; } catch (e) {}
+    clearTimeout(t);
     const err = new Error(detail);
     err.status = r.status;
     throw err;
   }
-  if (r.status === 204) return null;
-  return r.json();
+  if (r.status === 204) { clearTimeout(t); return null; }
+  // ВАЖНО: таймер снимаем только ПОСЛЕ чтения тела. Раньше clearTimeout стоял до
+  // r.json(), и если связь рвалась на середине ответа, приложение висело вечно —
+  // тот самый «бесконечный спиннер».
+  try {
+    const data = await r.json();
+    clearTimeout(t);
+    return data;
+  } catch (e) {
+    throw fail(e);
+  }
 }
 
 export const api = {

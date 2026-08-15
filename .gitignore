@@ -41,3 +41,6 @@ Thumbs.db
 design_handoff_radi_coffee/support.js
 # (design_handoff_radi_coffee/*.dc.html и README.md оставляем как референс)
 consoleai/
+
+# Локальные копии боевой БД — телефоны гостей, в публичный репозиторий нельзя
+backups/
