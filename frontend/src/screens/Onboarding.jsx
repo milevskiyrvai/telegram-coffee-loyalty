@@ -1,6 +1,6 @@
 // Онбординг: шаг 1 — поделиться номером, шаг 2 — ввести имя. Пиксель-в-пиксель из прототипа.
 import { useState } from 'react';
-import { displayPhone, normalizePhone } from '../ui.js';
+import { cleanName, displayPhone, normalizePhone } from '../ui.js';
 import { requestContact, haptic } from '../tg.js';
 import { api } from '../api.js';
 import { reportProblem } from '../beacon.js';
@@ -55,7 +55,9 @@ export default function Onboarding({ phone, onFinish }) {
   }
 
   function changeName(v) {
-    setName((v || '').replace(/[^А-Яа-яЁё -]/g, ''));
+    // Раньше здесь вырезалась вся латиница: гость вводил «Maria» и видел, как
+    // буквы исчезают на глазах, а сервер потом отвечал «пустое имя».
+    setName(cleanName(v));
   }
 
   async function finish() {
@@ -112,6 +114,7 @@ export default function Onboarding({ phone, onFinish }) {
             placeholder="Ваше имя"
             style={{ width: '100%', background: '#25231D', border: '1px solid rgba(194,160,121,0.2)', borderRadius: 16, outline: 'none', color: '#ECE7DB', fontSize: 18, textAlign: 'center', padding: 16, margin: '24px 0 0' }}
           />
+          <div style={{ color: '#5A554C', fontSize: 11, marginTop: 10, textAlign: 'center' }}>Только русскими буквами</div>
           <div style={{ flex: 1, maxHeight: 60 }} />
           <div
             onClick={finish}

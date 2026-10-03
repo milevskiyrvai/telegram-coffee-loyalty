@@ -29,6 +29,12 @@ export function initial(name) {
   return (name && name[0] ? name[0] : '?').toUpperCase();
 }
 
+// Имя: ТОЛЬКО русские буквы, пробел, дефис, апостроф — требование кофейни.
+// Сервер режет так же (backend/app/auth.py), поэтому расхождений быть не может.
+export function cleanName(v) {
+  return (v || '').replace(/[^А-Яа-яЁё \-']/g, '').replace(/\s+/g, ' ').slice(0, 48);
+}
+
 // Штампы 5 кружков + 6-й «сердце-подарок».
 export function buildSlots(count) {
   const base = {

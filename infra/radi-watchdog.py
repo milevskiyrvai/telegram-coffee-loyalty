@@ -107,18 +107,31 @@ def main():
     except Exception as e:
         problems.append(f"база недоступна: {str(e)[:80]}")
 
-    # 4. бэкап свежий
-    try:
-        files = [f for f in os.listdir(BACKUPS) if f.startswith("radi_") and f.endswith(".db")]
-        if not files:
-            problems.append("нет ни одного бэкапа")
+    # 4. бэкапы свежие: почасовые (не старше 3 ч) и суточные (не старше 26 ч)
+    for folder, prefix, max_h, label in (
+        (BACKUPS, "radi_", 3, "бэкап"),
+        (os.path.join(BACKUPS, "daily"), "radi_daily_", 26, "суточный бэкап"),
+    ):
+        try:
+            names = [f for f in os.listdir(folder) if f.startswith(prefix) and f.endswith(".db")]
+        except OSError:
+            problems.append(f"папка «{label}» недоступна")
+            continue
+        # Время берём по файлу отдельно: в :00 бэкап-скрипт удаляет старую копию,
+        # и файл мог пропасть между listdir и getmtime. Раньше это поднимало
+        # ложный алерт «папка бэкапов недоступна» (03.10 17:00).
+        mtimes = []
+        for f in names:
+            try:
+                mtimes.append(os.path.getmtime(os.path.join(folder, f)))
+            except OSError:
+                pass
+        if not mtimes:
+            problems.append(f"нет ни одного: {label}")
         else:
-            newest = max(files, key=lambda f: os.path.getmtime(os.path.join(BACKUPS, f)))
-            age_h = (time.time() - os.path.getmtime(os.path.join(BACKUPS, newest))) / 3600
-            if age_h > 3:
-                problems.append(f"бэкап устарел ({age_h:.1f} ч назад)")
-    except Exception:
-        problems.append("папка бэкапов недоступна")
+            age_h = (time.time() - max(mtimes)) / 3600
+            if age_h > max_h:
+                problems.append(f"{label} устарел ({age_h:.1f} ч назад)")
 
     # 5. диск
     try:

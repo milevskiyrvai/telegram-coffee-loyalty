@@ -1,7 +1,7 @@
 // Экран клиента: карта лояльности + QR. Пиксель-в-пиксель из прототипа.
 import { useState } from 'react';
 import { LogoR } from '../components.jsx';
-import { buildCupSlots } from '../ui.js';
+import { buildCupSlots, cleanName } from '../ui.js';
 import { openLink, haptic } from '../tg.js';
 import Qr from '../Qr.jsx';
 
@@ -21,7 +21,10 @@ export default function ClientCard({ me, address, onRename }) {
 
   function openEdit() {
     haptic('light');
-    setDraft((me.name || '').replace(/\s+/g, ' ').trim());
+    // Подставляем имя уже очищенным: у части гостей в карте латиница из Telegram
+    // («sigma», «Joana»), и если положить её в поле как есть — гость нажмёт
+    // «Сохранить» и упрётся в отказ сервера, не понимая почему.
+    setDraft(cleanName(me.name || ''));
     setFailed('');
     setEditing(true);
   }
@@ -97,10 +100,11 @@ export default function ClientCard({ me, address, onRename }) {
             <input
               value={draft}
               autoFocus
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => setDraft(cleanName(e.target.value))}
               placeholder="Ваше имя"
               style={{ width: '100%', background: '#25231D', border: '1px solid rgba(194,160,121,0.2)', borderRadius: 16, outline: 'none', color: '#ECE7DB', fontSize: 18, textAlign: 'center', padding: 16, margin: '18px 0 0' }}
             />
+            <div style={{ color: '#5A554C', fontSize: 11, marginTop: 10, textAlign: 'center' }}>Только русскими буквами</div>
             <div
               onClick={save}
               style={{
