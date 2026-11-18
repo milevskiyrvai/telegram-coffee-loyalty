@@ -2,6 +2,7 @@
 // Общий для роли «бариста» и вкладки «Гости» владельца.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api.js';
+import { BONUS_CAP } from './ui.js';
 import { haptic, scanQr, hasNativeScanner } from './tg.js';
 
 export function useGuests() {
@@ -132,7 +133,7 @@ export function useGuests() {
     } else if (pending.kind === 'redeem') {
       confirmDialog = { open: true, title: 'Выдать 6-й кофе бесплатно?', sub: `${d.name} — подарок, прогресс обнулится`, cta: 'Выдать подарок', danger: false };
     } else if (pending.kind === 'skip') {
-      confirmDialog = { open: true, title: 'Пропустить выдачу?', sub: dBonus >= 5 ? 'Запас уже полон (5). Прогресс обнулится без накопления.' : 'Гость оплатил кофе — бесплатный отложим в запас (макс 5).', cta: 'Пропустить', danger: false };
+      confirmDialog = { open: true, title: 'Пропустить выдачу?', sub: dBonus >= BONUS_CAP ? `Запас уже полон (${BONUS_CAP}). Прогресс обнулится без накопления.` : `Гость оплатил кофе — бесплатный отложим в запас (макс ${BONUS_CAP}).`, cta: 'Пропустить', danger: false };
     } else if (pending.kind === 'bonus') {
       confirmDialog = { open: true, title: 'Выдать бесплатный из запаса?', sub: `${d.name} · в запасе ${dBonus}`, cta: 'Выдать бесплатный', danger: false };
     }

@@ -23,7 +23,7 @@ CAFE_ADDRESS = os.getenv("CAFE_ADDRESS", "ул. Болотниковская, 36
 
 # Сколько кофе в цикле до подарка (5 платных + 6-й бесплатный)
 CYCLE = int(os.getenv("RADI_CYCLE", "5"))
-BONUS_CAP = int(os.getenv("RADI_BONUS_CAP", "5"))
+BONUS_CAP = int(os.getenv("RADI_BONUS_CAP", "10"))  # лимит запаса бесплатных; 5→10 по просьбе заказчика 19.11.2026
 
 # Разрешить dev-вход без валидной initData (ТОЛЬКО для локальной отладки).
 DEV_AUTH = os.getenv("RADI_DEV_AUTH", "0") == "1"
